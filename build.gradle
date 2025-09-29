@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id("xyz.jpenilla.run-paper") version "2.3.1"
+    id("io.github.goooler.shadow") version "8.1.8"
 }
 
 group = 'de.thisisfel1x'
@@ -16,6 +17,7 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
+    implementation("dev.triumphteam:triumph-gui:3.1.13")
 }
 
 tasks {
@@ -52,4 +54,8 @@ processResources {
     filesMatching('plugin.yml') {
         expand props
     }
+}
+
+shadowJar {
+    relocate("dev.triumphteam.gui", "de.thisisfel1x.forceitembattle.gui")
 }

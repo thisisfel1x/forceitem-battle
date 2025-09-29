@@ -1,5 +1,5 @@
 name: forceitem-battle
 version: '1.0-SNAPSHOT'
-main: de.thisisfel1x.forceitemBattle.ForceItemBattle
+main: de.thisisfel1x.forceitembattle.ForceItemBattle
 api-version: '1.21'
 authors: [ thisisfel1x ]
