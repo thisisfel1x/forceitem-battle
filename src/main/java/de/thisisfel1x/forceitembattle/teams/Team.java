@@ -33,10 +33,15 @@ public class Team {
         return Audience.audience(onlinePlayers);
     }
 
-    public void addPlayer(GamePlayer gamePlayer) {
+    public boolean addPlayer(GamePlayer gamePlayer) {
+        if (this.teamMembers.contains(gamePlayer)) {
+            gamePlayer.getPlayer().sendMessage(Component.text("You are already in this team!", NamedTextColor.RED));
+            return false;
+        }
+
         if (this.isFull()) {
-            gamePlayer.getPlayer().sendMessage(Component.text("This team is already full!"));
-            return;
+            gamePlayer.getPlayer().sendMessage(Component.text("This team is already full!", NamedTextColor.RED));
+            return false;
         }
 
         this.teamMembers.add(gamePlayer);
@@ -45,6 +50,8 @@ public class Team {
         Component joinMessage = Component.text(gamePlayer.getPlayer().getName(), teamColor)
                 .append(Component.text(" ist deinem Team beigetreten!", NamedTextColor.GRAY));
         this.broadcastTeamMessage(joinMessage);
+
+        return true;
     }
 
     public void removePlayer(GamePlayer gamePlayer) {

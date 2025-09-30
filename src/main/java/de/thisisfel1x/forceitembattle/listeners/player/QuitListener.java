@@ -1,4 +1,4 @@
-package de.thisisfel1x.forceitembattle.listeners;
+package de.thisisfel1x.forceitembattle.listeners.player;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;

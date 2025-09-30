@@ -1,8 +1,12 @@
 package de.thisisfel1x.forceitembattle.player;
 
 import de.thisisfel1x.forceitembattle.teams.Team;
+import dev.triumphteam.gui.builder.item.ItemBuilder;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.UUID;
 
@@ -49,5 +53,13 @@ public class GamePlayer {
 
     public boolean isInTeam() {
         return team != null;
+    }
+
+    public void setLobbyInventory() {
+        this.player.getInventory().clear();
+
+        ItemStack teamSelector = ItemBuilder.from(Material.AMETHYST_SHARD).name(Component.text("Wähle dein Team", NamedTextColor.WHITE)).glow().build();
+        this.player.getInventory().setItem(0, teamSelector);
+
     }
 }
