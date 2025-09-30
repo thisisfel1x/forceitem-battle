@@ -32,8 +32,4 @@ public class GameManager {
     public GameState getCurrentGameState() {
         return currentGameState;
     }
-
-    public ForceItemBattle getForceItemBattle() {
-        return forceItemBattle;
-    }
 }

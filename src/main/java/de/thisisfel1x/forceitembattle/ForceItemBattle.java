@@ -1,5 +1,6 @@
 package de.thisisfel1x.forceitembattle;
 
+import de.thisisfel1x.forceitembattle.commands.StartCommand;
 import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.gui.TeamSelectorInventory;
 import de.thisisfel1x.forceitembattle.listeners.player.InteractListener;
@@ -38,6 +39,7 @@ public final class ForceItemBattle extends JavaPlugin {
         this.teamSelectorInventory = new TeamSelectorInventory(this);
 
         this.registerListeners();
+        this.registerCommands();
     }
 
     @Override
@@ -55,6 +57,10 @@ public final class ForceItemBattle extends JavaPlugin {
         pluginManager.registerEvents(new QuitListener(this), this);
         pluginManager.registerEvents(new InteractListener(this), this);
         pluginManager.registerEvents(new InventoryClickListener(this), this);
+    }
+
+    private void registerCommands() {
+        this.registerCommand("start", new StartCommand(this));
     }
 
     public static ForceItemBattle getInstance() {

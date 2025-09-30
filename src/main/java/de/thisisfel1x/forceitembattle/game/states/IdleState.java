@@ -13,7 +13,8 @@ public class IdleState extends GameState {
 
     public IdleState(GameManager gameManager) {
         super(gameManager);
-        this.forceItemBattle = gameManager.getForceItemBattle();
+
+        this.forceItemBattle = ForceItemBattle.getInstance();
     }
 
     @Override
@@ -27,7 +28,7 @@ public class IdleState extends GameState {
 
     @Override
     public void onLeave() {
-
+        this.forceItemBattle.getServer().getScheduler().cancelTask(this.taskId);
     }
 
     @Override

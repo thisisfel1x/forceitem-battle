@@ -76,10 +76,6 @@ public class GamePlayer {
     }
 
     public void cleanOnJoin() {
-        GameStateEnum currentGameState = ForceItemBattle.getInstance().getGameManager().getCurrentGameState().getGameStateEnum();
-
-        if (currentGameState != GameStateEnum.IDLE) return;
-
         this.player.getInventory().clear();
         this.player.getInventory().setHelmet(null);
         this.player.getInventory().setChestplate(null);

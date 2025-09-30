@@ -22,17 +22,17 @@ public class ForceItemBattleScoreboardManager {
     }
 
     public void updateTeam(ForceItemBattleTeam logicForceItemBattleTeam) {
-        String teamId = "fib_" + logicForceItemBattleTeam.getTeamName().replace(" ", "").toLowerCase();
+        String teamNumber = logicForceItemBattleTeam.getTeamName().replaceAll("[^0-9]", "");
+        String teamId = String.format("%02d_fib_%s", Integer.parseInt(teamNumber), logicForceItemBattleTeam.getTeamName().replace(" ", "").toLowerCase());
 
         Team scoreboardTeam = mainScoreboard.getTeam(teamId);
         if (scoreboardTeam == null) {
             scoreboardTeam = mainScoreboard.registerNewTeam(teamId);
         }
 
-        scoreboardTeam.color(NamedTextColor.nearestTo(logicForceItemBattleTeam.getTeamColor()));
+        //scoreboardTeam.color(NamedTextColor.nearestTo(logicForceItemBattleTeam.getTeamColor()));
+        scoreboardTeam.color(NamedTextColor.WHITE);
 
-        // create prefix e.g [#1] playerName
-        String teamNumber = logicForceItemBattleTeam.getTeamName().replaceAll("[^0-9]", "");
         Component prefix = Component.text("[#" + teamNumber + "] ", logicForceItemBattleTeam.getTeamColor());
 
         scoreboardTeam.prefix(prefix);
@@ -40,18 +40,20 @@ public class ForceItemBattleScoreboardManager {
 
 
     private void createSpectatorTeam() {
-        String spectatorTeamId = "fib_spectator";
+        String spectatorTeamId = "99_fib_spectator";
         Team specTeam = mainScoreboard.getTeam(spectatorTeamId);
         if (specTeam == null) {
             specTeam = mainScoreboard.registerNewTeam(spectatorTeamId);
         }
+
         specTeam.color(NamedTextColor.GRAY);
-        specTeam.displayName(specTeam.displayName().decoration(TextDecoration.ITALIC, true));
+        specTeam.prefix(Component.empty().decoration(TextDecoration.ITALIC, true));
     }
 
     public void setPlayerSpectator(GamePlayer gamePlayer) {
-        removePlayerFromTeam(gamePlayer);
-        Team specTeam = mainScoreboard.getTeam("fib_spectator");
+        this.removePlayerFromTeam(gamePlayer);
+
+        Team specTeam = mainScoreboard.getTeam("99_fib_spectator");
         if (specTeam != null) {
             specTeam.addEntry(gamePlayer.getName());
         }
@@ -61,7 +63,9 @@ public class ForceItemBattleScoreboardManager {
         if (!gamePlayer.isInTeam()) return;
 
         ForceItemBattleTeam logicForceItemBattleTeam = gamePlayer.getTeam();
-        String teamId = "fib_" + logicForceItemBattleTeam.getTeamName().replace(" ", "").toLowerCase();
+
+        String teamNumber = logicForceItemBattleTeam.getTeamName().replaceAll("[^0-9]", "");
+        String teamId = String.format("%02d_fib_%s", Integer.parseInt(teamNumber), logicForceItemBattleTeam.getTeamName().replace(" ", "").toLowerCase());
 
         Team scoreboardTeam = mainScoreboard.getTeam(teamId);
         if (scoreboardTeam != null) {
@@ -78,7 +82,7 @@ public class ForceItemBattleScoreboardManager {
 
     public void cleanup() {
         mainScoreboard.getTeams().stream()
-                .filter(team -> team.getName().startsWith("fib_"))
+                .filter(team -> team.getName().contains("_fib_"))
                 .forEach(Team::unregister);
     }
 }

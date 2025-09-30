@@ -62,7 +62,6 @@ public class ForceItemBattleTeam {
                     .append(Component.text(" hat dein Team verlassen", NamedTextColor.GRAY));
             this.broadcastTeamMessage(leaveMessage);
 
-
             ForceItemBattle.getInstance().getForceItemBattleScoreboardManager().removePlayerFromTeam(gamePlayer);
         }
     }

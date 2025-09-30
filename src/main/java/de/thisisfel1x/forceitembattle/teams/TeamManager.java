@@ -2,9 +2,12 @@ package de.thisisfel1x.forceitembattle.teams;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class TeamManager {
 
@@ -48,6 +51,50 @@ public class TeamManager {
 
         this.forceItemBattleTeams.forEach(team ->
                 this.forceItemBattle.getForceItemBattleScoreboardManager().updateTeam(team));
+    }
+
+    public void assignAllPlayersWithoutTeam() {
+        List<GamePlayer> teamlessPlayers = this.gamePlayers.values().stream()
+                .filter(gp -> !gp.isInTeam())
+                .collect(Collectors.toList());
+
+        if (teamlessPlayers.isEmpty()) {
+            return;
+        }
+
+        Collections.shuffle(teamlessPlayers);
+
+        List<ForceItemBattleTeam> teamsWithSpace = this.forceItemBattleTeams.stream()
+                .filter(team -> !team.isFull())
+                .collect(Collectors.toList());
+
+        Collections.shuffle(teamsWithSpace);
+
+        Iterator<ForceItemBattleTeam> teamIterator = teamsWithSpace.iterator();
+        ForceItemBattleTeam currentTeam = teamIterator.hasNext() ? teamIterator.next() : null;
+
+        for (GamePlayer playerToAssign : teamlessPlayers) {
+            if (currentTeam == null) {
+                playerToAssign.getPlayer().kick(
+                        forceItemBattle.getPrefix()
+                                .append(Component.text("Es konnte kein freies Team mehr für dich gefunden werden.", NamedTextColor.RED))
+                );
+                continue;
+            }
+
+            currentTeam.addPlayer(playerToAssign);
+
+            playerToAssign.sendMessage(
+                    forceItemBattle.getPrefix()
+                            .append(Component.text("Du wurdest ", NamedTextColor.GRAY))
+                            .append(Component.text(currentTeam.getTeamName(), currentTeam.getTeamColor()))
+                            .append(Component.text(" zugewiesen!", NamedTextColor.GRAY))
+            );
+
+            //if (currentTeam.isFull()) {
+                currentTeam = teamIterator.hasNext() ? teamIterator.next() : null;
+            //}
+        }
     }
 
     public List<ForceItemBattleTeam> getTeams() {
