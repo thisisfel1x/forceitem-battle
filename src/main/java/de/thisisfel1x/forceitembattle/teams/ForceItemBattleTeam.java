@@ -1,5 +1,6 @@
 package de.thisisfel1x.forceitembattle.teams;
 
+import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -10,16 +11,15 @@ import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
-public class Team {
+public class ForceItemBattleTeam {
 
     private final String teamName;
     private final TextColor teamColor;
     private final List<GamePlayer> teamMembers;
     private final int maxTeamSize = 2;
 
-    public Team(String teamName, TextColor teamColor) {
+    public ForceItemBattleTeam(String teamName, TextColor teamColor) {
         this.teamName = teamName;
         this.teamColor = teamColor;
         this.teamMembers = new ArrayList<>();
@@ -33,25 +33,25 @@ public class Team {
         return Audience.audience(onlinePlayers);
     }
 
-    public boolean addPlayer(GamePlayer gamePlayer) {
+    public void addPlayer(GamePlayer gamePlayer) {
         if (this.teamMembers.contains(gamePlayer)) {
             gamePlayer.getPlayer().sendMessage(Component.text("You are already in this team!", NamedTextColor.RED));
-            return false;
+            return;
         }
 
         if (this.isFull()) {
             gamePlayer.getPlayer().sendMessage(Component.text("This team is already full!", NamedTextColor.RED));
-            return false;
+            return;
         }
 
         this.teamMembers.add(gamePlayer);
         gamePlayer.setTeam(this);
 
         Component joinMessage = Component.text(gamePlayer.getPlayer().getName(), teamColor)
-                .append(Component.text(" ist deinem Team beigetreten!", NamedTextColor.GRAY));
+                .append(Component.text(" hat dein Team betreten", NamedTextColor.GRAY));
         this.broadcastTeamMessage(joinMessage);
 
-        return true;
+        ForceItemBattle.getInstance().getForceItemBattleScoreboardManager().addPlayerToTeam(gamePlayer);
     }
 
     public void removePlayer(GamePlayer gamePlayer) {
@@ -59,8 +59,11 @@ public class Team {
             gamePlayer.setTeam(null);
 
             Component leaveMessage = Component.text(gamePlayer.getPlayer().getName(), teamColor)
-                    .append(Component.text(" hat dein Team verlassen.", NamedTextColor.GRAY));
+                    .append(Component.text(" hat dein Team verlassen", NamedTextColor.GRAY));
             this.broadcastTeamMessage(leaveMessage);
+
+
+            ForceItemBattle.getInstance().getForceItemBattleScoreboardManager().removePlayerFromTeam(gamePlayer);
         }
     }
 

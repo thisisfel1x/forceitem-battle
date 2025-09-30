@@ -7,6 +7,11 @@ import de.thisisfel1x.forceitembattle.listeners.player.InventoryClickListener;
 import de.thisisfel1x.forceitembattle.listeners.player.JoinListener;
 import de.thisisfel1x.forceitembattle.listeners.player.QuitListener;
 import de.thisisfel1x.forceitembattle.teams.TeamManager;
+import de.thisisfel1x.forceitembattle.utils.ForceItemBattleScoreboardManager;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -17,6 +22,7 @@ public final class ForceItemBattle extends JavaPlugin {
     // Managers
     private GameManager gameManager;
     private TeamManager teamManager;
+    private ForceItemBattleScoreboardManager forceItemBattleScoreboardManager;
 
     // Inventories
     private TeamSelectorInventory teamSelectorInventory;
@@ -25,6 +31,7 @@ public final class ForceItemBattle extends JavaPlugin {
     public void onEnable() {
         instance = this;
 
+        this.forceItemBattleScoreboardManager = new ForceItemBattleScoreboardManager(this);
         this.gameManager = new GameManager(this);
         this.teamManager = new TeamManager(this);
 
@@ -35,7 +42,9 @@ public final class ForceItemBattle extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        if (this.forceItemBattleScoreboardManager != null) {
+            this.forceItemBattleScoreboardManager.cleanup();
+        }
     }
 
     private void registerListeners() {
@@ -52,6 +61,12 @@ public final class ForceItemBattle extends JavaPlugin {
         return instance;
     }
 
+    public Component getPrefix() {
+        return Component.text("ForceItemBattle", TextColor.fromHexString("#F9A03F"))
+                .append(Component.text(" ● ", NamedTextColor.DARK_GRAY))
+                .append(Component.text("", NamedTextColor.GRAY));
+    }
+
     public GameManager getGameManager() {
         return gameManager;
     }
@@ -60,7 +75,13 @@ public final class ForceItemBattle extends JavaPlugin {
         return teamManager;
     }
 
+    public ForceItemBattleScoreboardManager getForceItemBattleScoreboardManager() {
+        return forceItemBattleScoreboardManager;
+    }
+
     public TeamSelectorInventory getTeamSelectorInventory() {
         return teamSelectorInventory;
     }
+
+
 }

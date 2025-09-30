@@ -10,7 +10,7 @@ public class TeamManager {
 
     private final ForceItemBattle forceItemBattle;
 
-    private final List<Team> teams = new ArrayList<>();
+    private final List<ForceItemBattleTeam> forceItemBattleTeams = new ArrayList<>();
     private final Map<UUID, GamePlayer> gamePlayers = new HashMap<>();
 
     private final List<String> hexColorPalette = Arrays.asList(
@@ -41,14 +41,17 @@ public class TeamManager {
             TextColor teamColor = TextColor.fromHexString(hexCode);
 
             if (teamColor != null) {
-                Team team = new Team("Team #" + (i + 1), teamColor);
-                this.teams.add(team);
+                ForceItemBattleTeam forceItemBattleTeam = new ForceItemBattleTeam("Team #" + (i + 1), teamColor);
+                this.forceItemBattleTeams.add(forceItemBattleTeam);
             }
         }
+
+        this.forceItemBattleTeams.forEach(team ->
+                this.forceItemBattle.getForceItemBattleScoreboardManager().updateTeam(team));
     }
 
-    public List<Team> getTeams() {
-        return teams;
+    public List<ForceItemBattleTeam> getTeams() {
+        return forceItemBattleTeams;
     }
 
     public Map<UUID, GamePlayer> getGamePlayers() {
@@ -59,15 +62,15 @@ public class TeamManager {
         return gamePlayers.get(uuid);
     }
 
-    public Optional<Team> findAvailableTeam() {
-        return teams.stream().filter(team -> !team.isFull()).findFirst();
+    public Optional<ForceItemBattleTeam> findAvailableTeam() {
+        return forceItemBattleTeams.stream().filter(forceItemBattleTeam -> !forceItemBattleTeam.isFull()).findFirst();
     }
 
     @Override
     public String toString() {
         return "TeamManager{" +
                 "forceItemBattle=" + forceItemBattle +
-                ", teams=" + teams +
+                ", teams=" + forceItemBattleTeams +
                 ", gamePlayers=" + gamePlayers +
                 ", hexColorPalette=" + hexColorPalette +
                 '}';

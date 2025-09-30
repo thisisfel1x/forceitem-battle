@@ -1,8 +1,10 @@
 package de.thisisfel1x.forceitembattle.listeners.player;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
+import de.thisisfel1x.forceitembattle.game.GameStateEnum;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -19,13 +21,33 @@ public class JoinListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        GameStateEnum currentGameState = this.forceItemBattle.getGameManager().getCurrentGameState().getGameStateEnum();
 
-        event.joinMessage(Component.text(">> " + player.getName()));
+        event.joinMessage(this.forceItemBattle.getPrefix()
+                .append(Component.text(player.getName() + " hat das Spiel betreten", NamedTextColor.GRAY)));
 
-        GamePlayer gamePlayer = new GamePlayer(player);
-        this.forceItemBattle.getTeamManager().getGamePlayers().put(player.getUniqueId(), gamePlayer);
+        if (currentGameState == GameStateEnum.IDLE) {
+            GamePlayer gamePlayer = new GamePlayer(player);
+            this.forceItemBattle.getTeamManager().getGamePlayers().put(player.getUniqueId(), gamePlayer);
 
-        gamePlayer.setLobbyInventory();
+            gamePlayer.setLobbyInventory();
+        } else {
+            // First, check if GamePlayer exists
+            GamePlayer foundGamePlayer =  this.forceItemBattle.getTeamManager().getGamePlayers().get(player.getUniqueId());
+
+            if (foundGamePlayer != null) {
+                // GamePlayer exists -> REJOIN
+                // TODO
+            } else {
+                // GamePlayer doesnt exists -> Spectator
+                GamePlayer gamePlayer = new GamePlayer(player);
+                gamePlayer.setSpectator(true);
+
+                this.forceItemBattle.getTeamManager().getGamePlayers().put(player.getUniqueId(), gamePlayer);
+            }
+        }
+
+
     }
 
 }

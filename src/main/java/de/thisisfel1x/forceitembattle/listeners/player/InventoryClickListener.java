@@ -29,7 +29,7 @@ public class InventoryClickListener implements Listener {
         if (event.getClickedInventory() == null) return;
 
         switch (gameStateEnum) {
-            case IDLE, LOBBY, STARTING, RESULTS, ENDING -> event.setCancelled(true);
+            case IDLE, STARTING, RESULTS -> event.setCancelled(true);
         }
     }
 

@@ -3,6 +3,7 @@ package de.thisisfel1x.forceitembattle.listeners.player;
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -25,8 +26,9 @@ public class InteractListener implements Listener {
         Player player = event.getPlayer();
         GameStateEnum gameStateEnum = this.forceItemBattle.getGameManager().getCurrentGameState().getGameStateEnum();
 
-        if (gameStateEnum == GameStateEnum.IDLE || gameStateEnum == GameStateEnum.LOBBY) {
+        if (gameStateEnum == GameStateEnum.IDLE) {
             if (event.getMaterial() == Material.AMETHYST_SHARD) {
+                player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_PLACE, 1, 1);
                 this.forceItemBattle.getTeamSelectorInventory().openGui(player);
             }
 

@@ -1,3 +1,5 @@
+import xyz.jpenilla.runtask.task.AbstractRun
+
 plugins {
     id 'java'
     id("xyz.jpenilla.run-paper") version "2.3.1"
@@ -55,6 +57,15 @@ processResources {
         expand props
     }
 }
+
+tasks.withType(AbstractRun) {
+    javaLauncher = javaToolchains.launcherFor {
+        vendor = JvmVendorSpec.JETBRAINS
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+    jvmArgs("-XX:+AllowEnhancedClassRedefinition")
+}
+
 
 shadowJar {
     relocate("dev.triumphteam.gui", "de.thisisfel1x.forceitembattle.gui")
