@@ -5,6 +5,7 @@ import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.game.GameState;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
+import de.thisisfel1x.forceitembattle.teams.ForceItemBattleTeam;
 import io.papermc.paper.registry.keys.SoundEventKeys;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
@@ -25,13 +26,13 @@ public class StartingState extends GameState {
     @Override
     public void onEnter() {
         this.forceItemBattle.getTeamManager().assignAllPlayersWithoutTeam();
+        this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::cleanOnJoin);
+        this.forceItemBattle.getTeamManager().getTeams().forEach(ForceItemBattleTeam::addJokersToInventory);
 
         this.taskId = this.forceItemBattle.getServer().getScheduler().scheduleSyncRepeatingTask(this.forceItemBattle, () -> {
 
             if (counter == 0) {
                 this.forceItemBattle.getServer().getScheduler().cancelTask(taskId);
-
-                this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::cleanOnJoin);
 
                 IngameState ingameState = new IngameState(this.forceItemBattle.getGameManager());
                 this.forceItemBattle.getGameManager().setCurrentGameState(ingameState);

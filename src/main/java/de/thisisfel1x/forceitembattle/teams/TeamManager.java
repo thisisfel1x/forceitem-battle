@@ -45,6 +45,8 @@ public class TeamManager {
 
             if (teamColor != null) {
                 ForceItemBattleTeam forceItemBattleTeam = new ForceItemBattleTeam("Team #" + (i + 1), teamColor);
+                forceItemBattleTeam.setupForGame();
+
                 this.forceItemBattleTeams.add(forceItemBattleTeam);
             }
         }

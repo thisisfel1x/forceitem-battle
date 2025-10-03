@@ -1,11 +1,10 @@
 package de.thisisfel1x.forceitembattle.player;
 
-import de.thisisfel1x.forceitembattle.ForceItemBattle;
-import de.thisisfel1x.forceitembattle.game.GameStateEnum;
 import de.thisisfel1x.forceitembattle.teams.ForceItemBattleTeam;
 import dev.triumphteam.gui.builder.item.ItemBuilder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -14,7 +13,6 @@ import java.util.UUID;
 
 public class GamePlayer {
 
-    private final Player player;
     private final String name;
     private final UUID uniqueId;
 
@@ -23,8 +21,6 @@ public class GamePlayer {
     private boolean spectator = false;
 
     public GamePlayer(Player player) {
-
-        this.player = player;
         this.name = player.getName();
         this.uniqueId = player.getUniqueId();
 
@@ -32,7 +28,7 @@ public class GamePlayer {
     }
 
     public void sendMessage(Component message) {
-        this.player.sendMessage(message);
+        this.getPlayer().sendMessage(message);
     }
 
     public String getName() {
@@ -44,7 +40,7 @@ public class GamePlayer {
     }
 
     public Player getPlayer() {
-        return player;
+        return Bukkit.getPlayer(this.uniqueId);
     }
 
     public ForceItemBattleTeam getTeam() {
@@ -64,7 +60,7 @@ public class GamePlayer {
     }
 
     public boolean isActive() {
-        return this.player.isOnline();
+        return this.getPlayer().isOnline();
     }
 
     public boolean isSpectator() {
@@ -76,21 +72,21 @@ public class GamePlayer {
     }
 
     public void cleanOnJoin() {
-        this.player.getInventory().clear();
-        this.player.getInventory().setHelmet(null);
-        this.player.getInventory().setChestplate(null);
-        this.player.getInventory().setLeggings(null);
-        this.player.getInventory().setBoots(null);
+        this.getPlayer().getInventory().clear();
+        this.getPlayer().getInventory().setHelmet(null);
+        this.getPlayer().getInventory().setChestplate(null);
+        this.getPlayer().getInventory().setLeggings(null);
+        this.getPlayer().getInventory().setBoots(null);
 
-        this.player.setHealth(20);
-        this.player.setFoodLevel(20);
+        this.getPlayer().setHealth(20);
+        this.getPlayer().setFoodLevel(20);
     }
 
     public void setLobbyInventory() {
-        this.player.getInventory().clear();
+        this.getPlayer().getInventory().clear();
 
         ItemStack teamSelector = ItemBuilder.from(Material.AMETHYST_SHARD).name(Component.text("Wähle dein Team", NamedTextColor.WHITE)).glow().build();
-        this.player.getInventory().setItem(0, teamSelector);
+        this.getPlayer().getInventory().setItem(0, teamSelector);
 
     }
 }

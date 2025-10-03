@@ -25,6 +25,13 @@ public class StartCommand implements BasicCommand {
             return;
         }
 
+        if (args.length == 0) {
+            return;
+        }
+
+        int minutes = Integer.parseInt(args[0]);
+        this.forceItemBattle.setGameTime(minutes);
+
         // TODO arg für Zeit
         StartingState startingState = new StartingState(this.forceItemBattle.getGameManager());
         this.forceItemBattle.getGameManager().setCurrentGameState(startingState);

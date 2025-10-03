@@ -1,29 +1,39 @@
 package de.thisisfel1x.forceitembattle;
 
+import de.thisisfel1x.forceitembattle.commands.RecipeCommand;
 import de.thisisfel1x.forceitembattle.commands.StartCommand;
 import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.gui.TeamSelectorInventory;
-import de.thisisfel1x.forceitembattle.listeners.player.InteractListener;
-import de.thisisfel1x.forceitembattle.listeners.player.InventoryClickListener;
-import de.thisisfel1x.forceitembattle.listeners.player.JoinListener;
-import de.thisisfel1x.forceitembattle.listeners.player.QuitListener;
+import de.thisisfel1x.forceitembattle.listeners.player.*;
 import de.thisisfel1x.forceitembattle.teams.TeamManager;
 import de.thisisfel1x.forceitembattle.utils.ForceItemBattleScoreboardManager;
+import de.thisisfel1x.forceitembattle.utils.ItemRegistry;
+import de.thisisfel1x.forceitembattle.utils.TextureMapper;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public final class ForceItemBattle extends JavaPlugin {
 
     private static ForceItemBattle instance;
 
+    private int gameTime = -1;
+
     // Managers
     private GameManager gameManager;
     private TeamManager teamManager;
     private ForceItemBattleScoreboardManager forceItemBattleScoreboardManager;
+
+    private final Map<String, String> textureMap = new HashMap<>();
 
     // Inventories
     private TeamSelectorInventory teamSelectorInventory;
@@ -31,6 +41,10 @@ public final class ForceItemBattle extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+
+        this.loadTextureMap();
+
+        ItemRegistry.initialize();
 
         this.forceItemBattleScoreboardManager = new ForceItemBattleScoreboardManager(this);
         this.gameManager = new GameManager(this);
@@ -57,10 +71,12 @@ public final class ForceItemBattle extends JavaPlugin {
         pluginManager.registerEvents(new QuitListener(this), this);
         pluginManager.registerEvents(new InteractListener(this), this);
         pluginManager.registerEvents(new InventoryClickListener(this), this);
+        pluginManager.registerEvents(new ItemFoundListener(this), this);
     }
 
     private void registerCommands() {
         this.registerCommand("start", new StartCommand(this));
+        this.registerCommand("itemrecipe", new RecipeCommand(this));
     }
 
     public static ForceItemBattle getInstance() {
@@ -71,6 +87,24 @@ public final class ForceItemBattle extends JavaPlugin {
         return Component.text("ForceItemBattle", TextColor.fromHexString("#F9A03F"))
                 .append(Component.text(" ● ", NamedTextColor.DARK_GRAY))
                 .append(Component.text("", NamedTextColor.GRAY));
+    }
+
+    private void loadTextureMap() {
+        File configFile = new File(getDataFolder(), "texture_map.yml");
+        if (!configFile.exists()) {
+            saveResource("texture_map.yml", false);
+        }
+
+        FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
+        for (String key : config.getKeys(false)) {
+            textureMap.put(key, config.getString(key));
+        }
+        getLogger().info(textureMap.size() + " Textur-Mappings wurden erfolgreich geladen.");
+    }
+
+    // Getter, damit andere Klassen darauf zugreifen können
+    public Map<String, String> getTextureMap() {
+        return textureMap;
     }
 
     public GameManager getGameManager() {
@@ -89,5 +123,11 @@ public final class ForceItemBattle extends JavaPlugin {
         return teamSelectorInventory;
     }
 
+    public int getGameTime() {
+        return gameTime;
+    }
 
+    public void setGameTime(int gameTime) {
+        this.gameTime = gameTime;
+    }
 }

@@ -3,6 +3,7 @@ package de.thisisfel1x.forceitembattle.listeners.player;
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -30,6 +31,11 @@ public class InventoryClickListener implements Listener {
 
         switch (gameStateEnum) {
             case IDLE, STARTING, RESULTS -> event.setCancelled(true);
+            case INGAME -> {
+                if (PlainTextComponentSerializer.plainText().serialize(event.getView().title()).contains("Rezept für:")) {
+                    event.setCancelled(true);
+                }
+            }
         }
     }
 
