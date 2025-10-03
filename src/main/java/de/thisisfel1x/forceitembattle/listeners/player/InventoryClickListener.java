@@ -32,6 +32,10 @@ public class InventoryClickListener implements Listener {
         switch (gameStateEnum) {
             case IDLE, STARTING, RESULTS -> event.setCancelled(true);
             case INGAME -> {
+                if (gamePlayer.isSpectator()) {
+                    event.setCancelled(true);
+                    return;
+                }
                 if (PlainTextComponentSerializer.plainText().serialize(event.getView().title()).contains("Rezept für:")) {
                     event.setCancelled(true);
                 }

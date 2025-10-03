@@ -3,6 +3,7 @@ package de.thisisfel1x.forceitembattle;
 import de.thisisfel1x.forceitembattle.commands.RecipeCommand;
 import de.thisisfel1x.forceitembattle.commands.StartCommand;
 import de.thisisfel1x.forceitembattle.game.GameManager;
+import de.thisisfel1x.forceitembattle.gui.SpectatorPlayerInventory;
 import de.thisisfel1x.forceitembattle.gui.TeamSelectorInventory;
 import de.thisisfel1x.forceitembattle.listeners.player.*;
 import de.thisisfel1x.forceitembattle.teams.TeamManager;
@@ -12,6 +13,8 @@ import de.thisisfel1x.forceitembattle.utils.TextureMapper;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
+import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
@@ -37,6 +40,7 @@ public final class ForceItemBattle extends JavaPlugin {
 
     // Inventories
     private TeamSelectorInventory teamSelectorInventory;
+    private SpectatorPlayerInventory spectatorPlayerInventory;
 
     @Override
     public void onEnable() {
@@ -51,9 +55,12 @@ public final class ForceItemBattle extends JavaPlugin {
         this.teamManager = new TeamManager(this);
 
         this.teamSelectorInventory = new TeamSelectorInventory(this);
+        this.spectatorPlayerInventory = new SpectatorPlayerInventory(this);
 
         this.registerListeners();
         this.registerCommands();
+
+        Bukkit.getWorlds().forEach(world -> world.setGameRule(GameRule.KEEP_INVENTORY, true));
     }
 
     @Override
@@ -121,6 +128,10 @@ public final class ForceItemBattle extends JavaPlugin {
 
     public TeamSelectorInventory getTeamSelectorInventory() {
         return teamSelectorInventory;
+    }
+
+    public SpectatorPlayerInventory getSpectatorPlayerInventory() {
+        return spectatorPlayerInventory;
     }
 
     public int getGameTime() {

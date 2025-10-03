@@ -47,6 +47,7 @@ public class JoinListener implements Listener {
                 GamePlayer gamePlayer = new GamePlayer(player);
                 gamePlayer.setSpectator(true);
                 gamePlayer.cleanOnJoin();
+                gamePlayer.setSpectatorInventory();
 
                 player.displayName(player.displayName().decoration(TextDecoration.ITALIC, true));
 

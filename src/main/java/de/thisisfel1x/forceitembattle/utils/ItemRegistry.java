@@ -129,7 +129,9 @@ public class ItemRegistry {
 
     public static List<ItemStack> getNewShuffledItemList() {
         List<ItemStack> shuffledList = new ArrayList<>(FINDABLE_ITEMS);
-        Collections.shuffle(shuffledList);
+        for (int i = 0; i < 10; i++) {
+            Collections.shuffle(shuffledList);
+        }
         return shuffledList;
     }
 
