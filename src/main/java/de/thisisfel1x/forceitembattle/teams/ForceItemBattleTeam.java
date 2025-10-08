@@ -13,14 +13,15 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.object.ObjectContents;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.entity.Boss;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class ForceItemBattleTeam {
 
@@ -34,6 +35,7 @@ public class ForceItemBattleTeam {
     private final List<FoundItemData> foundItems;
 
     private final BossBar bossBar;
+    private final Inventory backpack;
 
     public ForceItemBattleTeam(String teamName, TextColor teamColor) {
         this.teamName = teamName;
@@ -43,6 +45,7 @@ public class ForceItemBattleTeam {
         this.foundItems = new ArrayList<>();
 
         this.bossBar = BossBar.bossBar(Component.text("IDLE"), 1f, BossBar.Color.WHITE, BossBar.Overlay.PROGRESS);
+        this.backpack = Bukkit.createInventory(null, InventoryType.CHEST, Component.text("Backpack"));
     }
 
     public void setupForGame() {
@@ -158,6 +161,10 @@ public class ForceItemBattleTeam {
         return bossBar;
     }
 
+    public Inventory getBackpack() {
+        return backpack;
+    }
+
     @Override
     public String toString() {
         return "Team{" +
@@ -170,7 +177,7 @@ public class ForceItemBattleTeam {
 
     public void addJokersToInventory() {
         ItemStack joker = ItemBuilder.from(Material.BARRIER)
-                .amount(2)
+                .amount(ForceItemBattle.getInstance().getJokerAmount())
                 .name(Component.text("Joker", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false))
                 .build();
 

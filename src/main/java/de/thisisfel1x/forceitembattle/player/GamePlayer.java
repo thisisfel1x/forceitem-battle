@@ -11,6 +11,8 @@ import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.UUID;
 
@@ -83,6 +85,9 @@ public class GamePlayer {
 
         this.getPlayer().setHealth(20);
         this.getPlayer().setFoodLevel(20);
+        this.getPlayer().setSaturation(10);
+        this.getPlayer().setExp(0);
+        this.getPlayer().setLevel(0);
     }
 
     public void setLobbyInventory() {
@@ -109,6 +114,11 @@ public class GamePlayer {
         ItemStack teamSelector = ItemBuilder.from(Material.COMPASS).name(Component.text("Spieler beobachten", NamedTextColor.WHITE)
                 .decoration(TextDecoration.ITALIC, false)).build();
         this.getPlayer().getInventory().setItem(0, teamSelector);
-
     }
+
+    public void addEffectsForGame() {
+        this.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, 20 * 30, 1));
+        this.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 30, 0));
+    }
+
 }

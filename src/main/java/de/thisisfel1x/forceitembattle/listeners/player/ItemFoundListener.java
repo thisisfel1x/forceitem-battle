@@ -54,7 +54,12 @@ public class ItemFoundListener implements Listener {
         if (this.forceItemBattle.getGameManager().getCurrentGameState().getGameStateEnum() != GameStateEnum.INGAME) return;
         if (!(event.getWhoClicked() instanceof Player player)) return;
         if (event.getClickedInventory() == null) return;
+        if (event.getCurrentItem() == null) return;
         if (PlainTextComponentSerializer.plainText().serialize(event.getView().title()).contains("Rezept für:")) {
+            event.setCancelled(true);
+            return;
+        }
+        if (PlainTextComponentSerializer.plainText().serialize(event.getView().title()).contains("Backpack")) {
             event.setCancelled(true);
             return;
         }

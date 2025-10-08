@@ -155,6 +155,7 @@ public class ItemRegistry {
                 name.contains("GOAT_HORN") ||
                 name.contains("MUSIC_DISC_") ||
                 name.contains("TIPPED_") ||
+                name.contains("CHORUS") ||
                 name.contains("OMINOUS_BOTTLE") ||
                 name.contains("LINGERING_POTION") ||
                 name.contains("ANCIENT_DEBRIS") ||

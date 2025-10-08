@@ -25,12 +25,14 @@ public class StartCommand implements BasicCommand {
             return;
         }
 
-        if (args.length == 0) {
+        if (args.length != 2) {
             return;
         }
 
         int minutes = Integer.parseInt(args[0]);
+        int jokerAmount = Integer.parseInt(args[1]);
         this.forceItemBattle.setGameTime(minutes);
+        this.forceItemBattle.setJokerAmount(jokerAmount);
 
         // TODO arg für Zeit
         StartingState startingState = new StartingState(this.forceItemBattle.getGameManager());
@@ -51,4 +53,6 @@ public class StartCommand implements BasicCommand {
         }
         return java.util.List.of();
     }
+
+
 }

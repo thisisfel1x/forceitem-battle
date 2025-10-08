@@ -27,6 +27,7 @@ public class StartingState extends GameState {
     public void onEnter() {
         this.forceItemBattle.getTeamManager().assignAllPlayersWithoutTeam();
         this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::cleanOnJoin);
+        this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::addEffectsForGame);
         this.forceItemBattle.getTeamManager().getTeams().forEach(ForceItemBattleTeam::addJokersToInventory);
 
         this.taskId = this.forceItemBattle.getServer().getScheduler().scheduleSyncRepeatingTask(this.forceItemBattle, () -> {

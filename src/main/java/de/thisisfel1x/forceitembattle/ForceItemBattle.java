@@ -1,15 +1,18 @@
 package de.thisisfel1x.forceitembattle;
 
+import de.thisisfel1x.forceitembattle.commands.BackPackCommand;
 import de.thisisfel1x.forceitembattle.commands.RecipeCommand;
 import de.thisisfel1x.forceitembattle.commands.StartCommand;
 import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.gui.SpectatorPlayerInventory;
 import de.thisisfel1x.forceitembattle.gui.TeamSelectorInventory;
+import de.thisisfel1x.forceitembattle.listeners.block.BlockBreakListener;
+import de.thisisfel1x.forceitembattle.listeners.block.BlockPlaceListener;
+import de.thisisfel1x.forceitembattle.listeners.entity.EntityDamageListener;
 import de.thisisfel1x.forceitembattle.listeners.player.*;
 import de.thisisfel1x.forceitembattle.teams.TeamManager;
 import de.thisisfel1x.forceitembattle.utils.ForceItemBattleScoreboardManager;
 import de.thisisfel1x.forceitembattle.utils.ItemRegistry;
-import de.thisisfel1x.forceitembattle.utils.TextureMapper;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -21,8 +24,8 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class ForceItemBattle extends JavaPlugin {
@@ -30,6 +33,7 @@ public final class ForceItemBattle extends JavaPlugin {
     private static ForceItemBattle instance;
 
     private int gameTime = -1;
+    private int jokerAmount = -1;
 
     // Managers
     private GameManager gameManager;
@@ -73,17 +77,27 @@ public final class ForceItemBattle extends JavaPlugin {
     private void registerListeners() {
         PluginManager pluginManager = this.getServer().getPluginManager();
 
+        // ENTITY
+        pluginManager.registerEvents(new EntityDamageListener(this), this);
+
         // PLAYER
         pluginManager.registerEvents(new JoinListener(this), this);
         pluginManager.registerEvents(new QuitListener(this), this);
         pluginManager.registerEvents(new InteractListener(this), this);
         pluginManager.registerEvents(new InventoryClickListener(this), this);
         pluginManager.registerEvents(new ItemFoundListener(this), this);
+        pluginManager.registerEvents(new FoodLevelChangeListener(this), this);
+        pluginManager.registerEvents(new PlayerMoveListener(this), this);
+
+        // BLOCK
+        pluginManager.registerEvents(new BlockBreakListener(this), this);
+        pluginManager.registerEvents(new BlockPlaceListener(this), this);
     }
 
     private void registerCommands() {
         this.registerCommand("start", new StartCommand(this));
         this.registerCommand("itemrecipe", new RecipeCommand(this));
+        this.registerCommand("backpack", List.of("bp"), new BackPackCommand(this));
     }
 
     public static ForceItemBattle getInstance() {
@@ -140,5 +154,13 @@ public final class ForceItemBattle extends JavaPlugin {
 
     public void setGameTime(int gameTime) {
         this.gameTime = gameTime;
+    }
+
+    public int getJokerAmount() {
+        return jokerAmount;
+    }
+
+    public void setJokerAmount(int jokerAmount) {
+        this.jokerAmount = jokerAmount;
     }
 }
