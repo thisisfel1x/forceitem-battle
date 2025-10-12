@@ -2,10 +2,12 @@ package de.thisisfel1x.forceitembattle.listeners.player;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
+import de.thisisfel1x.forceitembattle.game.states.IdleState;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -33,6 +35,10 @@ public class JoinListener implements Listener {
 
             gamePlayer.cleanOnJoin();
             gamePlayer.setLobbyInventory();
+
+            Bukkit.getScheduler().runTask(this.forceItemBattle, () -> {
+                ((IdleState) this.forceItemBattle.getGameManager().getCurrentGameState()).teleportPlayerToNextSpawn(player);
+            });
         } else {
             // First, check if GamePlayer exists
             GamePlayer foundGamePlayer =  this.forceItemBattle.getTeamManager().getGamePlayers().get(player.getUniqueId());
@@ -56,7 +62,7 @@ public class JoinListener implements Listener {
             }
         }
 
-
+        this.forceItemBattle.getForceItemBattleScoreboardManager().handlePlayerJoin(player);
     }
 
 }

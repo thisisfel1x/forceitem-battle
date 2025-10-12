@@ -1,88 +1,160 @@
 package de.thisisfel1x.forceitembattle.utils;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
+import de.thisisfel1x.forceitembattle.game.GameStateEnum;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import de.thisisfel1x.forceitembattle.teams.ForceItemBattleTeam;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
+import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
+import net.megavex.scoreboardlibrary.api.sidebar.Sidebar;
+import net.megavex.scoreboardlibrary.api.sidebar.component.ComponentSidebarLayout;
+import net.megavex.scoreboardlibrary.api.sidebar.component.SidebarComponent;
+import net.megavex.scoreboardlibrary.api.team.ScoreboardTeam;
+import net.megavex.scoreboardlibrary.api.team.TeamManager;
 import org.bukkit.Bukkit;
-import org.bukkit.scoreboard.Scoreboard;
-import org.bukkit.scoreboard.Team;
+import org.bukkit.entity.Player;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class ForceItemBattleScoreboardManager {
 
     private final ForceItemBattle forceItemBattle;
-    private final Scoreboard mainScoreboard;
+    private final TeamManager teamManager; // Für Tab-Prefixes
+    private final Map<UUID, Sidebar> playerSidebars = new HashMap<>(); // Für Sidebars
 
     public ForceItemBattleScoreboardManager(ForceItemBattle forceItemBattle) {
         this.forceItemBattle = forceItemBattle;
-        this.mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+        ScoreboardLibrary scoreboardLibrary = forceItemBattle.getScoreboardLibrary();
+        this.teamManager = scoreboardLibrary.createTeamManager();
+
         createSpectatorTeam();
+
+        Bukkit.getScheduler().runTaskTimerAsynchronously(forceItemBattle, this::updateSidebar, 0L, 20L);
     }
+
+    public void handlePlayerJoin(Player player) {
+        Sidebar sidebar = forceItemBattle.getScoreboardLibrary().createSidebar();
+        sidebar.addPlayer(player);
+        playerSidebars.put(player.getUniqueId(), sidebar);
+
+        teamManager.addPlayer(player);
+    }
+
+    public void handlePlayerQuit(Player player) {
+        Sidebar sidebar = playerSidebars.remove(player.getUniqueId());
+        if (sidebar != null) {
+            sidebar.close();
+        }
+        teamManager.removePlayer(player);
+    }
+
+    public void updateSidebar() {
+        GameStateEnum currentState = forceItemBattle.getGameManager().getCurrentGameState().getGameStateEnum();
+        ComponentSidebarLayout layout;
+
+        switch (currentState) {
+            case IDLE, STARTING -> layout = buildLobbyLayout();
+            case INGAME -> layout = buildIngameLayout();
+            default -> layout = buildEmptyLayout();
+        }
+
+        for (Sidebar sidebar : playerSidebars.values()) {
+            layout.apply(sidebar);
+        }
+    }
+
+    private ComponentSidebarLayout buildLobbyLayout() {
+        SidebarComponent title = SidebarComponent.staticLine(
+                forceItemBattle.miniMessage().deserialize("<dark_gray>» <aqua>teamcrimx<bold>DE</bold> <dark_gray>«"));
+
+        SidebarComponent lines = SidebarComponent.builder()
+                .addBlankLine()
+                .addStaticLine(Component.text("Spieler:", NamedTextColor.WHITE))
+                .addDynamicLine(() -> {
+                    int online = Bukkit.getOnlinePlayers().size();
+                    int max = forceItemBattle.getTeamManager().getTeams().size() * 2;
+                    return forceItemBattle.miniMessage().deserialize("<dark_gray>● <green>" + online + "<gray>/<white>" + max);
+                })
+                .addBlankLine()
+                .build();
+
+        return new ComponentSidebarLayout(title, lines);
+    }
+
+    private ComponentSidebarLayout buildIngameLayout() {
+        SidebarComponent title = SidebarComponent.staticLine(
+                forceItemBattle.miniMessage().deserialize("<dark_gray>» <aqua>teamcrimx<bold>DE</bold> <dark_gray>«"));
+
+        var linesBuilder = SidebarComponent.builder();
+
+        List<ForceItemBattleTeam> sortedTeams = forceItemBattle.getTeamManager().getTeams().stream()
+                .filter(team -> !team.getTeamMembers().isEmpty()) // Deine Methode hier könnte getTeamMembers() heißen
+                .sorted(Comparator.comparingInt(team -> ((ForceItemBattleTeam) team).getFoundItems().size()).reversed())
+                .toList();
+
+        linesBuilder.addBlankLine();
+        for (ForceItemBattleTeam team : sortedTeams) {
+            linesBuilder.addDynamicLine(() -> Component.text("#" + team.getTeamId(), team.getTeamColor())
+                    .append(Component.text(" ● ", NamedTextColor.DARK_GRAY).append(Component.text(team.getFoundItems().size() + " "
+                            + (team.getFoundItems().size() == 1 ? "Item" : "Items"), NamedTextColor.WHITE))));
+        }
+        linesBuilder.addBlankLine();
+
+        return new ComponentSidebarLayout(title, linesBuilder.build());
+    }
+
+    private ComponentSidebarLayout buildEmptyLayout() {
+        return new ComponentSidebarLayout(SidebarComponent.staticLine(Component.empty()),
+                SidebarComponent.staticLine(Component.empty()));
+    }
+
 
     public void updateTeam(ForceItemBattleTeam logicForceItemBattleTeam) {
+        String teamId = String.format("%02d_fib_%s", logicForceItemBattleTeam.getTeamId(), logicForceItemBattleTeam.getTeamName().toLowerCase());
+        ScoreboardTeam team = teamManager.createIfAbsent(teamId);
+
         String teamNumber = logicForceItemBattleTeam.getTeamName().replaceAll("[^0-9]", "");
-        String teamId = String.format("%02d_fib_%s", Integer.parseInt(teamNumber), logicForceItemBattleTeam.getTeamName().replace(" ", "").toLowerCase());
-
-        Team scoreboardTeam = mainScoreboard.getTeam(teamId);
-        if (scoreboardTeam == null) {
-            scoreboardTeam = mainScoreboard.registerNewTeam(teamId);
-        }
-
-        //scoreboardTeam.color(NamedTextColor.nearestTo(logicForceItemBattleTeam.getTeamColor()));
-        scoreboardTeam.color(NamedTextColor.WHITE);
-
         Component prefix = Component.text("[#" + teamNumber + "] ", logicForceItemBattleTeam.getTeamColor());
 
-        scoreboardTeam.prefix(prefix);
+        team.defaultDisplay().prefix(prefix);
     }
 
-
     private void createSpectatorTeam() {
-        String spectatorTeamId = "99_fib_spectator";
-        Team specTeam = mainScoreboard.getTeam(spectatorTeamId);
-        if (specTeam == null) {
-            specTeam = mainScoreboard.registerNewTeam(spectatorTeamId);
-        }
-
-        specTeam.color(NamedTextColor.GRAY);
-        specTeam.prefix(Component.empty().decoration(TextDecoration.ITALIC, true));
+        ScoreboardTeam specTeam = teamManager.createIfAbsent("99_fib_spectator");
+        specTeam.defaultDisplay().playerColor(NamedTextColor.GRAY);
     }
 
     public void setPlayerSpectator(GamePlayer gamePlayer) {
-        this.removePlayerFromTeam(gamePlayer);
-
-        Team specTeam = mainScoreboard.getTeam("99_fib_spectator");
+        this.removePlayerFromTeam(gamePlayer); // Entfernt den Spieler aus seinem alten Team
+        ScoreboardTeam specTeam = teamManager.team("99_fib_spectator");
         if (specTeam != null) {
-            specTeam.addEntry(gamePlayer.getName());
+            specTeam.defaultDisplay().addEntry(gamePlayer.getName());
         }
     }
 
     public void addPlayerToTeam(GamePlayer gamePlayer) {
         if (!gamePlayer.isInTeam()) return;
-
-        ForceItemBattleTeam logicForceItemBattleTeam = gamePlayer.getTeam();
-
-        String teamNumber = logicForceItemBattleTeam.getTeamName().replaceAll("[^0-9]", "");
-        String teamId = String.format("%02d_fib_%s", Integer.parseInt(teamNumber), logicForceItemBattleTeam.getTeamName().replace(" ", "").toLowerCase());
-
-        Team scoreboardTeam = mainScoreboard.getTeam(teamId);
-        if (scoreboardTeam != null) {
-            scoreboardTeam.addEntry(gamePlayer.getName());
+        ForceItemBattleTeam logicTeam = gamePlayer.getTeam();
+        String teamId = String.format("%02d_fib_%s", logicTeam.getTeamId(), logicTeam.getTeamName().toLowerCase());
+        ScoreboardTeam team = teamManager.team(teamId);
+        if (team != null) {
+            team.defaultDisplay().addEntry(gamePlayer.getName());
         }
     }
 
     public void removePlayerFromTeam(GamePlayer gamePlayer) {
-        Team currentTeam = mainScoreboard.getEntryTeam(gamePlayer.getName());
-        if (currentTeam != null) {
-            currentTeam.removeEntry(gamePlayer.getName());
-        }
+        teamManager.teams().forEach(team -> team.defaultDisplay().removeEntry(gamePlayer.getName()));
     }
 
     public void cleanup() {
-        mainScoreboard.getTeams().stream()
-                .filter(team -> team.getName().contains("_fib_"))
-                .forEach(Team::unregister);
+        if (teamManager != null) {
+            teamManager.close();
+        }
+        playerSidebars.values().forEach(Sidebar::close);
+        playerSidebars.clear();
     }
 }

@@ -152,6 +152,8 @@ public class ItemRegistry {
                 name.contains("TURTLE") ||
                 name.contains("SCULK") ||
                 name.contains("ELYTRA") ||
+                name.contains("SLIME") ||
+                name.contains("SHULKER_") ||
                 name.contains("GOAT_HORN") ||
                 name.contains("MUSIC_DISC_") ||
                 name.contains("TIPPED_") ||
@@ -171,6 +173,9 @@ public class ItemRegistry {
                 name.contains("PETRIFIED") ||
                 name.contains("WITHER_ROSE") ||
                 name.contains("FERMENTED") ||
+                name.contains("RECOVERY_") ||
+                name.contains("SPECTRAL_") ||
+                name.contains("HONEY_") ||
                 name.contains("SPONGE") ||
                 name.contains("PALE") ||
                 name.contains("CREAKING") ||

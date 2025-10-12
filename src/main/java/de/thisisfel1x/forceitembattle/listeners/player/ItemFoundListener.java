@@ -59,10 +59,6 @@ public class ItemFoundListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        if (PlainTextComponentSerializer.plainText().serialize(event.getView().title()).contains("Backpack")) {
-            event.setCancelled(true);
-            return;
-        }
         ItemStack craftedItem = event.getCurrentItem();
 
         checkIfItemIsFound(player, craftedItem);

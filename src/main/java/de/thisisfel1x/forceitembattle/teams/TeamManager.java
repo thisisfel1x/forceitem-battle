@@ -44,7 +44,7 @@ public class TeamManager {
             TextColor teamColor = TextColor.fromHexString(hexCode);
 
             if (teamColor != null) {
-                ForceItemBattleTeam forceItemBattleTeam = new ForceItemBattleTeam("Team #" + (i + 1), teamColor);
+                ForceItemBattleTeam forceItemBattleTeam = new ForceItemBattleTeam(i + 1, "Team #" + (i + 1), teamColor);
                 forceItemBattleTeam.setupForGame();
 
                 this.forceItemBattleTeams.add(forceItemBattleTeam);

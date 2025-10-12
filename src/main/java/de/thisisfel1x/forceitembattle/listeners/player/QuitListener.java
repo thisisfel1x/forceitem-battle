@@ -44,6 +44,8 @@ public class QuitListener implements Listener {
                 // TODO do nothing for now
             }
         }
+
+        this.forceItemBattle.getForceItemBattleScoreboardManager().handlePlayerQuit(player);
     }
 
 }

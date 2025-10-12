@@ -16,6 +16,10 @@ import de.thisisfel1x.forceitembattle.utils.ItemRegistry;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
+import net.megavex.scoreboardlibrary.api.exception.NoPacketAdapterAvailableException;
+import net.megavex.scoreboardlibrary.api.noop.NoopScoreboardLibrary;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -38,9 +42,13 @@ public final class ForceItemBattle extends JavaPlugin {
     // Managers
     private GameManager gameManager;
     private TeamManager teamManager;
+
+    private ScoreboardLibrary scoreboardLibrary;
     private ForceItemBattleScoreboardManager forceItemBattleScoreboardManager;
 
     private final Map<String, String> textureMap = new HashMap<>();
+
+    private final MiniMessage miniMessage = MiniMessage.miniMessage();
 
     // Inventories
     private TeamSelectorInventory teamSelectorInventory;
@@ -54,9 +62,16 @@ public final class ForceItemBattle extends JavaPlugin {
 
         ItemRegistry.initialize();
 
+        try {
+            this.scoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(this);
+        } catch (NoPacketAdapterAvailableException ignored) {
+            this.scoreboardLibrary = new NoopScoreboardLibrary();
+            this.getLogger().warning("No scoreboard packet adapter available!");
+        }
         this.forceItemBattleScoreboardManager = new ForceItemBattleScoreboardManager(this);
-        this.gameManager = new GameManager(this);
+
         this.teamManager = new TeamManager(this);
+        this.gameManager = new GameManager(this);
 
         this.teamSelectorInventory = new TeamSelectorInventory(this);
         this.spectatorPlayerInventory = new SpectatorPlayerInventory(this);
@@ -72,6 +87,8 @@ public final class ForceItemBattle extends JavaPlugin {
         if (this.forceItemBattleScoreboardManager != null) {
             this.forceItemBattleScoreboardManager.cleanup();
         }
+
+        this.scoreboardLibrary.close();
     }
 
     private void registerListeners() {
@@ -88,6 +105,7 @@ public final class ForceItemBattle extends JavaPlugin {
         pluginManager.registerEvents(new ItemFoundListener(this), this);
         pluginManager.registerEvents(new FoodLevelChangeListener(this), this);
         pluginManager.registerEvents(new PlayerMoveListener(this), this);
+        pluginManager.registerEvents(new DropItemListener(this), this);
 
         // BLOCK
         pluginManager.registerEvents(new BlockBreakListener(this), this);
@@ -108,6 +126,10 @@ public final class ForceItemBattle extends JavaPlugin {
         return Component.text("ForceItemBattle", TextColor.fromHexString("#F9A03F"))
                 .append(Component.text(" ● ", NamedTextColor.DARK_GRAY))
                 .append(Component.text("", NamedTextColor.GRAY));
+    }
+
+    public MiniMessage miniMessage() {
+        return miniMessage;
     }
 
     private void loadTextureMap() {
@@ -138,6 +160,10 @@ public final class ForceItemBattle extends JavaPlugin {
 
     public ForceItemBattleScoreboardManager getForceItemBattleScoreboardManager() {
         return forceItemBattleScoreboardManager;
+    }
+
+    public ScoreboardLibrary getScoreboardLibrary() {
+        return scoreboardLibrary;
     }
 
     public TeamSelectorInventory getTeamSelectorInventory() {

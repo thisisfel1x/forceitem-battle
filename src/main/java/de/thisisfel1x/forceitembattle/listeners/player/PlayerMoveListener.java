@@ -23,7 +23,7 @@ public class PlayerMoveListener implements Listener {
         GameStateEnum gameStateEnum = this.forceItemBattle.getGameManager().getCurrentGameState().getGameStateEnum();
 
         if (gameStateEnum != GameStateEnum.INGAME) {
-            if (event.getFrom().getX() != event.getTo().getX() || event.getFrom().getY() != event.getTo().getY() || event.getFrom().getZ() != event.getTo().getZ()) {
+            if (event.getFrom().getX() != event.getTo().getX() || event.getFrom().getZ() != event.getTo().getZ()) {
                 player.teleport(location.setDirection(event.getTo().getDirection()));
             }
         }

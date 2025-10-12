@@ -36,6 +36,8 @@ public class IngameState extends GameState {
                 return;
             }
 
+            //this.forceItemBattle.getForceItemBattleScoreboardManager().updateSidebar();
+
             int minutes = this.timeLeftInSeconds / 60;
             int seconds = this.timeLeftInSeconds % 60;
             Component timeComponent = Component.text(String.format("%02d:%02d", minutes, seconds), NamedTextColor.YELLOW);

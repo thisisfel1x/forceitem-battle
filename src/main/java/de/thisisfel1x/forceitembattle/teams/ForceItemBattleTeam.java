@@ -25,6 +25,7 @@ import java.util.List;
 
 public class ForceItemBattleTeam {
 
+    private final int teamId;
     private final String teamName;
     private final TextColor teamColor;
     private final List<GamePlayer> teamMembers;
@@ -37,7 +38,8 @@ public class ForceItemBattleTeam {
     private final BossBar bossBar;
     private final Inventory backpack;
 
-    public ForceItemBattleTeam(String teamName, TextColor teamColor) {
+    public ForceItemBattleTeam(int teamId, String teamName, TextColor teamColor) {
+        this.teamId = teamId;
         this.teamName = teamName;
         this.teamColor = teamColor;
         this.teamMembers = new ArrayList<>();
@@ -163,6 +165,10 @@ public class ForceItemBattleTeam {
 
     public Inventory getBackpack() {
         return backpack;
+    }
+
+    public int getTeamId() {
+        return teamId;
     }
 
     @Override
