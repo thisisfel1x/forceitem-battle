@@ -25,7 +25,7 @@ If you want to compile the project yourself, follow these steps.
 
 * Git
 * Java Development Kit (JDK) 21 or newer
-* Gradle (or use the included Gradle Wrapper)
+* Gradle
 
 **Cloning and Building:**
 

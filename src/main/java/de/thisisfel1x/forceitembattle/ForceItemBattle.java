@@ -9,6 +9,7 @@ import de.thisisfel1x.forceitembattle.gui.TeamSelectorInventory;
 import de.thisisfel1x.forceitembattle.listeners.block.BlockBreakListener;
 import de.thisisfel1x.forceitembattle.listeners.block.BlockPlaceListener;
 import de.thisisfel1x.forceitembattle.listeners.entity.EntityDamageListener;
+import de.thisisfel1x.forceitembattle.listeners.entity.EntityExhaustionListener;
 import de.thisisfel1x.forceitembattle.listeners.player.*;
 import de.thisisfel1x.forceitembattle.teams.TeamManager;
 import de.thisisfel1x.forceitembattle.utils.ForceItemBattleScoreboardManager;
@@ -96,6 +97,7 @@ public final class ForceItemBattle extends JavaPlugin {
 
         // ENTITY
         pluginManager.registerEvents(new EntityDamageListener(this), this);
+        pluginManager.registerEvents(new EntityExhaustionListener(this), this);
 
         // PLAYER
         pluginManager.registerEvents(new JoinListener(this), this);
