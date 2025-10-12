@@ -65,4 +65,4 @@ If you want to compile the project yourself, follow these steps.
 
 ## License
 
-Distributed under CC BY-NC-SA 4.0. See `LICENSE` for more information.
+Distributed under CC BY-NC-SA 4.0. Click [here](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en) for more information.
