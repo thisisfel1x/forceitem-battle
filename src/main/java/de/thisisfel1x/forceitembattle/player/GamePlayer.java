@@ -9,7 +9,11 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -119,6 +123,20 @@ public class GamePlayer {
     public void addEffectsForGame() {
         this.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, 20 * 30, 1));
         this.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 30, 0));
+    }
+
+    public void updateArmorstandItem() {
+        this.getPlayer().getPassengers().forEach(passenger -> {
+            this.getPlayer().removePassenger(passenger);
+            passenger.remove();
+        });
+
+        this.getPlayer().addPassenger(this.getPlayer().getWorld().spawnEntity(this.getPlayer().getLocation(), EntityType.ARMOR_STAND, CreatureSpawnEvent.SpawnReason.CUSTOM, entity -> {
+            ArmorStand armorStand = (ArmorStand) entity;
+
+            armorStand.setInvisible(true);
+            armorStand.setItem(EquipmentSlot.HEAD, this.getTeam().getCurrentItem());
+        }));
     }
 
 }

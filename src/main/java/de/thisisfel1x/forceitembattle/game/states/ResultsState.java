@@ -6,6 +6,7 @@ import de.thisisfel1x.forceitembattle.game.GameState;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
 import de.thisisfel1x.forceitembattle.teams.ForceItemBattleTeam;
 import de.thisisfel1x.forceitembattle.utils.FoundItemData;
+import de.thisisfel1x.forceitembattle.utils.LocationUtil;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
@@ -13,6 +14,8 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -27,6 +30,9 @@ public class ResultsState extends GameState {
     private final ForceItemBattle forceItemBattle;
     private BukkitTask resultsTask;
 
+    private List<Location> lobbySpawns;
+    private int nextSpawnIndex = 0;
+
     public ResultsState(GameManager gameManager) {
         super(gameManager);
         this.forceItemBattle = ForceItemBattle.getInstance();
@@ -34,11 +40,33 @@ public class ResultsState extends GameState {
 
     @Override
     public void onEnter() {
+        Location worldSpawnPoint = new Location(Bukkit.getWorld("world"), 0, 80, 0);
+        int maxPlayers = this.forceItemBattle.getTeamManager().getTeams().size() * 2;
+        double radius = 10;
+        this.lobbySpawns = LocationUtil.calculateCircleSpawns(worldSpawnPoint, maxPlayers, radius);
+        this.nextSpawnIndex = 0;
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            teleportPlayerToNextSpawn(player);
+        }
+
         List<ForceItemBattleTeam> sortedTeams = this.forceItemBattle.getTeamManager().getTeams().stream()
                 .sorted(Comparator.comparingInt(team -> ((ForceItemBattleTeam) team).getFoundItems().size()).reversed())
                 .toList();
 
         this.resultsTask = new ResultsRunnable(sortedTeams).runTaskTimer(forceItemBattle, 0L, 1L);
+    }
+
+    public void teleportPlayerToNextSpawn(Player player) {
+        if (lobbySpawns.isEmpty()) {
+            player.sendMessage(Component.text("Fehler: Keine Lobby-Spawnpunkte definiert!", NamedTextColor.RED));
+            return;
+        }
+
+        Location spawnLocation = lobbySpawns.get(nextSpawnIndex);
+        player.teleport(spawnLocation);
+
+        nextSpawnIndex = (nextSpawnIndex + 1) % lobbySpawns.size();
     }
 
     @Override
@@ -55,8 +83,8 @@ public class ResultsState extends GameState {
 
     private class ResultsRunnable extends BukkitRunnable {
 
-        private static final int ITEM_SHOWCASE_DURATION_TICKS = 200; // 10 seconds
-        private static final int REVEAL_DURATION_TICKS = 60; // 3 seconds
+        private static final int ITEM_SHOWCASE_DURATION_TICKS = 200;
+        private static final int REVEAL_DURATION_TICKS = 60;
 
         private final List<ForceItemBattleTeam> allSortedTeams;
         private final List<ForceItemBattleTeam> topTeams;
@@ -92,7 +120,7 @@ public class ResultsState extends GameState {
             List<FoundItemData> foundItems = team.getFoundItems();
 
             if (tickCounter < ITEM_SHOWCASE_DURATION_TICKS) {
-                if (tickCounter % 10 == 0) { // Switch item every half-second
+                if (tickCounter % 10 == 0) {
                     currentItemIndex = (currentItemIndex + 1) % foundItems.size();
                     audience.playSound(Sound.sound(org.bukkit.Sound.UI_BUTTON_CLICK, Sound.Source.MASTER, 0.5f, 1.5f));
                 }
@@ -137,7 +165,7 @@ public class ResultsState extends GameState {
                 Component msg = forceItemBattle.getPrefix()
                         .append(Component.text("Der Server stoppt in ", NamedTextColor.RED))
                         .append(Component.text(secondsLeft, NamedTextColor.YELLOW))
-                        .append(Component.text(secondsLeft == 1 ? " Sekunde..." : " Sekunden...", NamedTextColor.RED));
+                        .append(Component.text(secondsLeft == 1 ? " Sekunde" : " Sekunden", NamedTextColor.RED));
                 audience.sendMessage(msg);
                 audience.playSound(Sound.sound(org.bukkit.Sound.BLOCK_NOTE_BLOCK_BASS, Sound.Source.MASTER, 1f, 1f));
                 announcementsMade.add(secondsLeft);

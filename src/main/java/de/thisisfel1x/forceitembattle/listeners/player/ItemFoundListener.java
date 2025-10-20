@@ -117,6 +117,9 @@ public class ItemFoundListener implements Listener {
 
         // Update boss bar
         team.updateBossBar();
+
+        // Update passenger
+        this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::updateArmorstandItem);
     }
 
     private void checkIfItemIsFound(Player player, ItemStack itemFound) {
@@ -142,6 +145,9 @@ public class ItemFoundListener implements Listener {
 
             // Update boss bar
             team.updateBossBar();
+
+            // Update passenger
+            this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::updateArmorstandItem);
         }
     }
 
