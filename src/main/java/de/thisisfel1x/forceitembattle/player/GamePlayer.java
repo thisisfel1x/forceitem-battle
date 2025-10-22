@@ -126,12 +126,15 @@ public class GamePlayer {
     }
 
     public void updateArmorstandItem() {
+        if(this.isSpectator()) return;
+
         this.getPlayer().getPassengers().forEach(passenger -> {
             this.getPlayer().removePassenger(passenger);
             passenger.remove();
         });
 
-        this.getPlayer().addPassenger(this.getPlayer().getWorld().spawnEntity(this.getPlayer().getLocation(), EntityType.ARMOR_STAND, CreatureSpawnEvent.SpawnReason.CUSTOM, entity -> {
+        this.getPlayer().addPassenger(this.getPlayer().getWorld().spawnEntity(this.getPlayer().getLocation(),
+                EntityType.ARMOR_STAND, CreatureSpawnEvent.SpawnReason.CUSTOM, entity -> {
             ArmorStand armorStand = (ArmorStand) entity;
 
             armorStand.setInvisible(true);

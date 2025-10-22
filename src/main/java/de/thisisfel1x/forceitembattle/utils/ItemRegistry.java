@@ -176,6 +176,7 @@ public class ItemRegistry {
                 name.contains("RECOVERY_") ||
                 name.contains("SPECTRAL_") ||
                 name.contains("HONEY_") ||
+                name.contains("TEST_") ||
                 name.contains("SPONGE") ||
                 name.contains("PALE") ||
                 name.contains("CREAKING") ||
