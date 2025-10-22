@@ -108,6 +108,7 @@ public final class ForceItemBattle extends JavaPlugin {
         pluginManager.registerEvents(new FoodLevelChangeListener(this), this);
         pluginManager.registerEvents(new PlayerMoveListener(this), this);
         pluginManager.registerEvents(new DropItemListener(this), this);
+        pluginManager.registerEvents(new PlayerChangedWorldListener(this), this);
 
         // BLOCK
         pluginManager.registerEvents(new BlockBreakListener(this), this);

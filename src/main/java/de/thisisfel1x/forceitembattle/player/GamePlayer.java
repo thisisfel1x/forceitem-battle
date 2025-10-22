@@ -10,6 +10,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.CreatureSpawnEvent;
@@ -28,6 +29,8 @@ public class GamePlayer {
     private ForceItemBattleTeam forceItemBattleTeam;
 
     private boolean spectator = false;
+
+    private Entity lastPassenger;
 
     public GamePlayer(Player player) {
         this.name = player.getName();
@@ -133,12 +136,18 @@ public class GamePlayer {
             passenger.remove();
         });
 
+        if (this.lastPassenger != null) {
+            this.lastPassenger.remove();
+        }
+
         this.getPlayer().addPassenger(this.getPlayer().getWorld().spawnEntity(this.getPlayer().getLocation(),
                 EntityType.ARMOR_STAND, CreatureSpawnEvent.SpawnReason.CUSTOM, entity -> {
             ArmorStand armorStand = (ArmorStand) entity;
 
             armorStand.setInvisible(true);
             armorStand.setItem(EquipmentSlot.HEAD, this.getTeam().getCurrentItem());
+
+            this.lastPassenger = armorStand;
         }));
     }
 
