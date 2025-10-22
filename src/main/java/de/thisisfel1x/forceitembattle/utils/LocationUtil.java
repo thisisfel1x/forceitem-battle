@@ -44,12 +44,6 @@ public class LocationUtil {
             currentBlock.setType(Material.TINTED_GLASS);
             spawnLocation = currentBlock.getLocation().toCenterLocation().add(0, 0.5, 0);
 
-            // --- Player Rotation (Facing the Center) ---
-            // Calculate the direction vector from the spawn point towards the center
-            Vector direction = center.toVector().subtract(spawnLocation.toVector());
-            // Set the location's direction, which automatically calculates yaw and pitch
-            spawnLocation.setDirection(direction);
-
             locations.add(spawnLocation);
         }
 

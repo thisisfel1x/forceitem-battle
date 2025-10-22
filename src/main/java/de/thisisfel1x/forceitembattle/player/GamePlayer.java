@@ -9,6 +9,8 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -126,6 +128,22 @@ public class GamePlayer {
     public void addEffectsForGame() {
         this.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, 20 * 30, 1));
         this.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 30, 0));
+    }
+
+    public void freezePlayer() {
+        if (this.isSpectator()) return;
+
+        AttributeInstance attributeInstance = this.getPlayer().getAttribute(Attribute.MOVEMENT_SPEED);
+        if (attributeInstance != null)
+            attributeInstance.setBaseValue(0.00001);
+    }
+
+    public void unfreezePlayer() {
+        if (this.isSpectator()) return;
+
+        AttributeInstance attributeInstance = this.getPlayer().getAttribute(Attribute.MOVEMENT_SPEED);
+        if (attributeInstance != null)
+            attributeInstance.setBaseValue(0.1);
     }
 
     public void updateArmorstandItem() {
