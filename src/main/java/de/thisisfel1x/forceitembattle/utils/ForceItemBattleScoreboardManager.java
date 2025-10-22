@@ -65,7 +65,7 @@ public class ForceItemBattleScoreboardManager {
                 }
             }
             case INGAME -> {
-                layout = buildIngameLayout();
+                layout = buildEmptyLayout();
                 for (ForceItemBattleTeam logicTeam : forceItemBattle.getTeamManager().getTeams()) {
                     String teamId = String.format("%02d_fib_%s", logicTeam.getTeamId(), logicTeam.getTeamName().toLowerCase());
                     ScoreboardTeam scoreboardTeam = teamManager.team(teamId);
