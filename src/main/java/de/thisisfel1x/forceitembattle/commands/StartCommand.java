@@ -7,6 +7,7 @@ import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.entity.Player;
 import org.jspecify.annotations.Nullable;
 
 public class StartCommand implements BasicCommand {
@@ -19,6 +20,7 @@ public class StartCommand implements BasicCommand {
 
     @Override
     public void execute(CommandSourceStack source, String[] args) {
+        if (!(source.getSender() instanceof Player player)) return;
 
         if (this.forceItemBattle.getGameManager().getCurrentGameState().getGameStateEnum() != GameStateEnum.IDLE) {
             source.getSender().sendMessage(Component.text("Nicht im IDLE State",  NamedTextColor.RED));
@@ -38,6 +40,7 @@ public class StartCommand implements BasicCommand {
         StartingState startingState = new StartingState(this.forceItemBattle.getGameManager());
         this.forceItemBattle.getGameManager().setCurrentGameState(startingState);
 
+        player.sendMessage(this.forceItemBattle.getPrefix().append(Component.text("Das Spiel wird gestartet", NamedTextColor.GREEN)));
 
     }
 

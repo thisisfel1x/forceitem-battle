@@ -80,7 +80,11 @@ public final class ForceItemBattle extends JavaPlugin {
         this.registerListeners();
         this.registerCommands();
 
-        Bukkit.getWorlds().forEach(world -> world.setGameRule(GameRule.KEEP_INVENTORY, true));
+        Bukkit.getWorlds().forEach(world -> {
+            world.setGameRule(GameRule.KEEP_INVENTORY, true);
+            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+            world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+        });
     }
 
     @Override

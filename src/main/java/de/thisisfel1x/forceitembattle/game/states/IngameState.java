@@ -19,7 +19,7 @@ public class IngameState extends GameState {
     public IngameState(GameManager gameManager) {
         super(gameManager);
         this.forceItemBattle = ForceItemBattle.getInstance();
-        this.timeLeftInSeconds = 10;
+        this.timeLeftInSeconds = this.forceItemBattle.getGameTime() * 60;
     }
 
     @Override

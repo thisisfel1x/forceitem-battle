@@ -22,6 +22,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.time.Duration;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -44,7 +45,10 @@ public class ResultsState extends GameState {
 
     @Override
     public void onEnter() {
-        Bukkit.getOnlinePlayers().forEach(player -> player.getPassengers().forEach(player::removePassenger));
+        Bukkit.getOnlinePlayers().forEach(player -> player.getPassengers().forEach(passenger -> {
+            player.removePassenger(passenger);
+            passenger.remove();
+        }));
 
         setupAndTeleportPlayers();
         this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::freezePlayer);
@@ -52,7 +56,7 @@ public class ResultsState extends GameState {
         this.allSortedTeams = this.forceItemBattle.getTeamManager().getTeams().stream()
                 .filter(team -> !team.getTeamMembers().isEmpty())
                 .sorted(Comparator.comparingInt(team -> ((ForceItemBattleTeam) team).getFoundItems().size()).reversed())
-                .toList();
+                .toList().reversed();
 
         this.topTeams = allSortedTeams.stream()
                 .filter(team -> !team.getFoundItems().isEmpty())
@@ -85,8 +89,8 @@ public class ResultsState extends GameState {
         currentResultsTask = new ShowIntroTask().runTaskLater(forceItemBattle, 20L);
     }
 
-    private void startTeamShowcaseTask() {
-        currentResultsTask = new TeamShowcaseTask(0).runTaskTimer(forceItemBattle, 0L, 10L);
+    private void startTeamShowcaseTask(int teamIndex) {
+        currentResultsTask = new TeamShowcaseTask(teamIndex).runTaskTimer(forceItemBattle, 0L, 10L);
     }
 
     private void startTeamRevealTask(ForceItemBattleTeam team, int teamRank) {
@@ -109,7 +113,7 @@ public class ResultsState extends GameState {
             currentResultsTask = new BukkitRunnable() {
                 @Override
                 public void run() {
-                    startTeamShowcaseTask();
+                    startTeamShowcaseTask(0);
                 }
             }.runTaskLater(forceItemBattle, 100L);
         }
@@ -158,7 +162,7 @@ public class ResultsState extends GameState {
 
         @Override
         public void run() {
-            Component title = Component.text("#" + (teamRank + 1) + " " + team.getTeamName(), team.getTeamColor(), TextDecoration.BOLD);
+            Component title = Component.text("#" + (topTeams.size() - teamRank) + " " + team.getTeamName(), team.getTeamColor(), TextDecoration.BOLD);
             Component subtitle = Component.text(team.getFoundItems().size() + " Items gefunden!", NamedTextColor.WHITE);
             Title.Times times = Title.Times.times(Duration.ofSeconds(1), Duration.ofSeconds(3), Duration.ofSeconds(1));
 
@@ -168,8 +172,9 @@ public class ResultsState extends GameState {
             currentResultsTask = new BukkitRunnable() {
                 @Override
                 public void run() {
-                    if (teamRank + 1 < topTeams.size()) {
-                        startTeamShowcaseTask();
+                    int nextTeamIndex = teamRank + 1;
+                    if (nextTeamIndex < topTeams.size()) {
+                        startTeamShowcaseTask(nextTeamIndex);
                     } else {
                         startFinalRankingTask();
                     }
