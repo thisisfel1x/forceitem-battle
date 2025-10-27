@@ -60,6 +60,8 @@ If you want to compile the project yourself, follow these steps.
 | `/start <duration_in_min> <amount_of_jokers>` | Starts the game with a set duration and the amount of jokers. | `forceitembattle.start` |
 | `/itemrecipe`                                 | Displays the crafting recipe for the current item.            | (None)                  |
 | `/backpack` or `/bp`                          | Opens the team backpack                                       | (None)                  |
+| `/spawn`                                      | Teleports player to world spawn location                      | (None)                  |
+| `/top`                                        | Teleports player to the highest block at the current location | (None)                  |
 
 -----
 
