@@ -32,6 +32,8 @@ public class InteractListener implements Listener {
             if (event.getMaterial() == Material.AMETHYST_SHARD) {
                 player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_PLACE, 1, 1);
                 this.forceItemBattle.getTeamSelectorInventory().openGui(player);
+            } else if (event.getMaterial() == Material.BRUSH) {
+                this.forceItemBattle.getSettingsInventory().openGui(player);
             }
         } else if (gameStateEnum == GameStateEnum.INGAME) {
             if (!gamePlayer.isSpectator()) return;

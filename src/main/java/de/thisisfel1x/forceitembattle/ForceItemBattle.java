@@ -2,6 +2,7 @@ package de.thisisfel1x.forceitembattle;
 
 import de.thisisfel1x.forceitembattle.commands.*;
 import de.thisisfel1x.forceitembattle.game.GameManager;
+import de.thisisfel1x.forceitembattle.gui.SettingsInventory;
 import de.thisisfel1x.forceitembattle.gui.SpectatorPlayerInventory;
 import de.thisisfel1x.forceitembattle.gui.TeamSelectorInventory;
 import de.thisisfel1x.forceitembattle.listeners.block.BlockBreakListener;
@@ -9,6 +10,7 @@ import de.thisisfel1x.forceitembattle.listeners.block.BlockPlaceListener;
 import de.thisisfel1x.forceitembattle.listeners.entity.EntityDamageListener;
 import de.thisisfel1x.forceitembattle.listeners.entity.EntityExhaustionListener;
 import de.thisisfel1x.forceitembattle.listeners.player.*;
+import de.thisisfel1x.forceitembattle.settings.SettingsManager;
 import de.thisisfel1x.forceitembattle.teams.TeamManager;
 import de.thisisfel1x.forceitembattle.utils.ForceItemBattleScoreboardManager;
 import de.thisisfel1x.forceitembattle.utils.ItemRegistry;
@@ -44,6 +46,7 @@ public final class ForceItemBattle extends JavaPlugin {
 
     private ScoreboardLibrary scoreboardLibrary;
     private ForceItemBattleScoreboardManager forceItemBattleScoreboardManager;
+    private SettingsManager settingsManager;
 
     private final Map<String, String> textureMap = new HashMap<>();
 
@@ -52,6 +55,7 @@ public final class ForceItemBattle extends JavaPlugin {
     // Inventories
     private TeamSelectorInventory teamSelectorInventory;
     private SpectatorPlayerInventory spectatorPlayerInventory;
+    private SettingsInventory settingsInventory;
 
     @Override
     public void onEnable() {
@@ -71,9 +75,11 @@ public final class ForceItemBattle extends JavaPlugin {
 
         this.teamManager = new TeamManager(this);
         this.gameManager = new GameManager(this);
+        this.settingsManager = new SettingsManager(this);
 
         this.teamSelectorInventory = new TeamSelectorInventory(this);
         this.spectatorPlayerInventory = new SpectatorPlayerInventory(this);
+        this.settingsInventory = new SettingsInventory(this);
 
         this.registerListeners();
         this.registerCommands();
@@ -165,6 +171,10 @@ public final class ForceItemBattle extends JavaPlugin {
         return teamManager;
     }
 
+    public SettingsManager getSettingsManager() {
+        return settingsManager;
+    }
+
     public ForceItemBattleScoreboardManager getForceItemBattleScoreboardManager() {
         return forceItemBattleScoreboardManager;
     }
@@ -179,6 +189,10 @@ public final class ForceItemBattle extends JavaPlugin {
 
     public SpectatorPlayerInventory getSpectatorPlayerInventory() {
         return spectatorPlayerInventory;
+    }
+
+    public SettingsInventory getSettingsInventory() {
+        return settingsInventory;
     }
 
     public int getGameTime() {

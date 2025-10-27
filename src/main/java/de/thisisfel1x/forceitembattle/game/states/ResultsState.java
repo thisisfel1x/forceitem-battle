@@ -45,6 +45,8 @@ public class ResultsState extends GameState {
 
     @Override
     public void onEnter() {
+        this.forceItemBattle.getSettingsManager().removeAllGameSettings();
+
         Bukkit.getOnlinePlayers().forEach(player -> player.getPassengers().forEach(passenger -> {
             player.removePassenger(passenger);
             passenger.remove();

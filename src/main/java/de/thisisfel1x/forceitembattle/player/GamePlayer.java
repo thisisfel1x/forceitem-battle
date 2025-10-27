@@ -105,6 +105,11 @@ public class GamePlayer {
         ItemStack teamSelector = ItemBuilder.from(Material.AMETHYST_SHARD).name(Component.text("Wähle dein Team", NamedTextColor.WHITE)).glow().build();
         this.getPlayer().getInventory().setItem(0, teamSelector);
 
+        if (this.getPlayer().hasPermission("forceitembattle.settings")) {
+            ItemStack settingsItem = ItemBuilder.from(Material.BRUSH).name(Component.text("Einstellungen", NamedTextColor.RED)).glow().build();
+            this.getPlayer().getInventory().setItem(1, settingsItem);
+        }
+
     }
 
     public void setSpectatorInventory() {
