@@ -1,8 +1,6 @@
 package de.thisisfel1x.forceitembattle;
 
-import de.thisisfel1x.forceitembattle.commands.BackPackCommand;
-import de.thisisfel1x.forceitembattle.commands.RecipeCommand;
-import de.thisisfel1x.forceitembattle.commands.StartCommand;
+import de.thisisfel1x.forceitembattle.commands.*;
 import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.gui.SpectatorPlayerInventory;
 import de.thisisfel1x.forceitembattle.gui.TeamSelectorInventory;
@@ -123,6 +121,8 @@ public final class ForceItemBattle extends JavaPlugin {
         this.registerCommand("start", new StartCommand(this));
         this.registerCommand("itemrecipe", new RecipeCommand(this));
         this.registerCommand("backpack", List.of("bp"), new BackPackCommand(this));
+        this.registerCommand("spawn", new SpawnCommand(this));
+        this.registerCommand("top", new TopCommand(this));
     }
 
     public static ForceItemBattle getInstance() {
