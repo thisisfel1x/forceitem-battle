@@ -37,7 +37,7 @@ jobs:
           token: ${{ secrets.MODRINTH_TOKEN }}
           project: 'awKBElnR'
           name: 'Build ${{ steps.vars.outputs.sha_short }}'
-          version: ${{ github.sha }}
+          version: ${{ steps.vars.outputs.sha_short }}
           changelog: ''
           loaders: |-
             paper
