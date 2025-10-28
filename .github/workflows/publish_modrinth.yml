@@ -26,7 +26,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: ./gradlew build -Pversion=${{ github.event.release.tag_name }}
+        run: ./gradlew shadowJar -Pversion=${{ github.event.release.tag_name }}
 
       - name: Upload to Modrinth
         uses: cloudnode-pro/modrinth-publish@v2
