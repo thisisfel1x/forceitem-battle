@@ -139,6 +139,10 @@ public class ForceItemBattleTeam {
         );
     }
 
+    public void clearBossBar() {
+        this.teamMembers.forEach(gamePlayer -> gamePlayer.getPlayer().hideBossBar(this.bossBar));
+    }
+
     public boolean isFull() {
         return this.teamMembers.size() >= this.maxTeamSize;
     }

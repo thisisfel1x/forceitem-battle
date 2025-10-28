@@ -53,7 +53,9 @@ public class ResultsState extends GameState {
         }));
 
         setupAndTeleportPlayers();
+
         this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::freezePlayer);
+        this.forceItemBattle.getTeamManager().getTeams().forEach(ForceItemBattleTeam::clearBossBar);
 
         this.allSortedTeams = this.forceItemBattle.getTeamManager().getTeams().stream()
                 .filter(team -> !team.getTeamMembers().isEmpty())

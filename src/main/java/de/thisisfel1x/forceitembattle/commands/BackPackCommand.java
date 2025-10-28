@@ -31,7 +31,7 @@ public class BackPackCommand implements BasicCommand {
             return;
         }
 
-        if ((boolean) this.forceItemBattle.getSettingsManager().getSetting("BACKPACK").getValue()) {
+        if (!((boolean) this.forceItemBattle.getSettingsManager().getSetting("BACKPACK").getValue())) {
             player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Der Backpack ist deaktiviert", NamedTextColor.RED)));
             return;
         }

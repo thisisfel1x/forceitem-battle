@@ -21,12 +21,18 @@ public class SettingsInventory {
                 .rows(3)
                 .create();
 
-        for (AbstractSetting<?> setting : this.forceItemBattle.getSettingsManager().getSettings()) {
+        for (int i = 0; i < this.forceItemBattle.getSettingsManager().getSettings().size(); i++) {
+            AbstractSetting<?> setting = this.forceItemBattle.getSettingsManager().getSettings().get(i);
+
+            int finalI = i;
             gui.addItem(ItemBuilder.from(setting.getIcon()).asGuiItem(event -> {
                 if (!(event.getWhoClicked() instanceof Player)) return;
 
                 setting.handleIconClick(player);
+                gui.updateItem(finalI, setting.getIcon());
             }));
         }
+
+        gui.open(player);
     }
 }
