@@ -35,10 +35,7 @@ public class JoinListener implements Listener {
 
             gamePlayer.cleanOnJoin();
             gamePlayer.setLobbyInventory();
-
-            Bukkit.getScheduler().runTask(this.forceItemBattle, () -> {
-                ((IdleState) this.forceItemBattle.getGameManager().getCurrentGameState()).teleportPlayerToNextSpawn(player);
-            });
+            gamePlayer.freezePlayer();
         } else {
             // First, check if GamePlayer exists
             GamePlayer foundGamePlayer =  this.forceItemBattle.getTeamManager().getGamePlayers().get(player.getUniqueId());

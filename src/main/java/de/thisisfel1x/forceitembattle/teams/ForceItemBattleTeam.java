@@ -79,20 +79,26 @@ public class ForceItemBattleTeam {
 
     public void addPlayer(GamePlayer gamePlayer) {
         if (this.teamMembers.contains(gamePlayer)) {
-            gamePlayer.getPlayer().sendMessage(Component.text("You are already in this team!", NamedTextColor.RED));
+            gamePlayer.getPlayer().sendMessage(ForceItemBattle.getInstance().getPrefix().append(
+                    Component.text("Du bist bereits in diesem Team", NamedTextColor.RED)
+            ));
             return;
         }
 
         if (this.isFull()) {
-            gamePlayer.getPlayer().sendMessage(Component.text("This team is already full!", NamedTextColor.RED));
+            gamePlayer.getPlayer().sendMessage(ForceItemBattle.getInstance().getPrefix().append(
+                    Component.text("Dieses Team ist bereits voll", NamedTextColor.RED)
+            ));
             return;
         }
 
         this.teamMembers.add(gamePlayer);
         gamePlayer.setTeam(this);
 
-        Component joinMessage = Component.text(gamePlayer.getPlayer().getName(), teamColor)
-                .append(Component.text(" hat dein Team betreten", NamedTextColor.GRAY));
+        Component joinMessage = ForceItemBattle.getInstance().getPrefix().append(
+                Component.text(gamePlayer.getPlayer().getName(), teamColor)
+                        .append(Component.text(" hat dein Team betreten", NamedTextColor.GRAY))
+        );
         this.broadcastTeamMessage(joinMessage);
 
         gamePlayer.getPlayer().showBossBar(this.bossBar);
@@ -104,8 +110,10 @@ public class ForceItemBattleTeam {
         if (this.teamMembers.remove(gamePlayer)) {
             gamePlayer.setTeam(null);
 
-            Component leaveMessage = Component.text(gamePlayer.getPlayer().getName(), teamColor)
-                    .append(Component.text(" hat dein Team verlassen", NamedTextColor.GRAY));
+            Component leaveMessage = ForceItemBattle.getInstance().getPrefix().append(
+                    Component.text(gamePlayer.getPlayer().getName(), teamColor)
+                            .append(Component.text(" hat dein Team verlassen", NamedTextColor.GRAY))
+            );
             this.broadcastTeamMessage(leaveMessage);
 
             gamePlayer.getPlayer().hideBossBar(this.bossBar);
@@ -129,6 +137,10 @@ public class ForceItemBattleTeam {
                 sprite.append(Component.text(" "))
                         .append(Component.translatable(this.getCurrentItem().translationKey()))
         );
+    }
+
+    public void clearBossBar() {
+        this.teamMembers.forEach(gamePlayer -> gamePlayer.getPlayer().hideBossBar(this.bossBar));
     }
 
     public boolean isFull() {

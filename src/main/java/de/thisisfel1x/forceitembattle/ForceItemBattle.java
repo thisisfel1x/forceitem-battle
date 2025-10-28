@@ -1,9 +1,8 @@
 package de.thisisfel1x.forceitembattle;
 
-import de.thisisfel1x.forceitembattle.commands.BackPackCommand;
-import de.thisisfel1x.forceitembattle.commands.RecipeCommand;
-import de.thisisfel1x.forceitembattle.commands.StartCommand;
+import de.thisisfel1x.forceitembattle.commands.*;
 import de.thisisfel1x.forceitembattle.game.GameManager;
+import de.thisisfel1x.forceitembattle.gui.SettingsInventory;
 import de.thisisfel1x.forceitembattle.gui.SpectatorPlayerInventory;
 import de.thisisfel1x.forceitembattle.gui.TeamSelectorInventory;
 import de.thisisfel1x.forceitembattle.listeners.block.BlockBreakListener;
@@ -11,6 +10,7 @@ import de.thisisfel1x.forceitembattle.listeners.block.BlockPlaceListener;
 import de.thisisfel1x.forceitembattle.listeners.entity.EntityDamageListener;
 import de.thisisfel1x.forceitembattle.listeners.entity.EntityExhaustionListener;
 import de.thisisfel1x.forceitembattle.listeners.player.*;
+import de.thisisfel1x.forceitembattle.settings.SettingsManager;
 import de.thisisfel1x.forceitembattle.teams.TeamManager;
 import de.thisisfel1x.forceitembattle.utils.ForceItemBattleScoreboardManager;
 import de.thisisfel1x.forceitembattle.utils.ItemRegistry;
@@ -46,6 +46,7 @@ public final class ForceItemBattle extends JavaPlugin {
 
     private ScoreboardLibrary scoreboardLibrary;
     private ForceItemBattleScoreboardManager forceItemBattleScoreboardManager;
+    private SettingsManager settingsManager;
 
     private final Map<String, String> textureMap = new HashMap<>();
 
@@ -54,6 +55,7 @@ public final class ForceItemBattle extends JavaPlugin {
     // Inventories
     private TeamSelectorInventory teamSelectorInventory;
     private SpectatorPlayerInventory spectatorPlayerInventory;
+    private SettingsInventory settingsInventory;
 
     @Override
     public void onEnable() {
@@ -73,14 +75,20 @@ public final class ForceItemBattle extends JavaPlugin {
 
         this.teamManager = new TeamManager(this);
         this.gameManager = new GameManager(this);
+        this.settingsManager = new SettingsManager(this);
 
         this.teamSelectorInventory = new TeamSelectorInventory(this);
         this.spectatorPlayerInventory = new SpectatorPlayerInventory(this);
+        this.settingsInventory = new SettingsInventory(this);
 
         this.registerListeners();
         this.registerCommands();
 
-        Bukkit.getWorlds().forEach(world -> world.setGameRule(GameRule.KEEP_INVENTORY, true));
+        Bukkit.getWorlds().forEach(world -> {
+            world.setGameRule(GameRule.KEEP_INVENTORY, true);
+            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+            world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+        });
     }
 
     @Override
@@ -108,6 +116,7 @@ public final class ForceItemBattle extends JavaPlugin {
         pluginManager.registerEvents(new FoodLevelChangeListener(this), this);
         pluginManager.registerEvents(new PlayerMoveListener(this), this);
         pluginManager.registerEvents(new DropItemListener(this), this);
+        pluginManager.registerEvents(new PlayerChangedWorldListener(this), this);
 
         // BLOCK
         pluginManager.registerEvents(new BlockBreakListener(this), this);
@@ -118,6 +127,8 @@ public final class ForceItemBattle extends JavaPlugin {
         this.registerCommand("start", new StartCommand(this));
         this.registerCommand("itemrecipe", new RecipeCommand(this));
         this.registerCommand("backpack", List.of("bp"), new BackPackCommand(this));
+        this.registerCommand("spawn", new SpawnCommand(this));
+        this.registerCommand("top", new TopCommand(this));
     }
 
     public static ForceItemBattle getInstance() {
@@ -160,6 +171,10 @@ public final class ForceItemBattle extends JavaPlugin {
         return teamManager;
     }
 
+    public SettingsManager getSettingsManager() {
+        return settingsManager;
+    }
+
     public ForceItemBattleScoreboardManager getForceItemBattleScoreboardManager() {
         return forceItemBattleScoreboardManager;
     }
@@ -174,6 +189,10 @@ public final class ForceItemBattle extends JavaPlugin {
 
     public SpectatorPlayerInventory getSpectatorPlayerInventory() {
         return spectatorPlayerInventory;
+    }
+
+    public SettingsInventory getSettingsInventory() {
+        return settingsInventory;
     }
 
     public int getGameTime() {

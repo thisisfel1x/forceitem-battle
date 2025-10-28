@@ -4,6 +4,7 @@ import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.game.GameState;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
+import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import de.thisisfel1x.forceitembattle.teams.ForceItemBattleTeam;
 import de.thisisfel1x.forceitembattle.utils.FoundItemData;
 import de.thisisfel1x.forceitembattle.utils.LocationUtil;
@@ -28,10 +29,14 @@ import java.util.Set;
 public class ResultsState extends GameState {
 
     private final ForceItemBattle forceItemBattle;
-    private BukkitTask resultsTask;
+    private BukkitTask currentResultsTask;
 
     private List<Location> lobbySpawns;
     private int nextSpawnIndex = 0;
+
+    private List<ForceItemBattleTeam> allSortedTeams;
+    private List<ForceItemBattleTeam> topTeams;
+    private final Audience audience = Bukkit.getServer();
 
     public ResultsState(GameManager gameManager) {
         super(gameManager);
@@ -40,156 +45,200 @@ public class ResultsState extends GameState {
 
     @Override
     public void onEnter() {
-        Location worldSpawnPoint = new Location(Bukkit.getWorld("world"), 0, 80, 0);
+        this.forceItemBattle.getSettingsManager().removeAllGameSettings();
+
+        Bukkit.getOnlinePlayers().forEach(player -> player.getPassengers().forEach(passenger -> {
+            player.removePassenger(passenger);
+            passenger.remove();
+        }));
+
+        setupAndTeleportPlayers();
+
+        this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::freezePlayer);
+        this.forceItemBattle.getTeamManager().getTeams().forEach(ForceItemBattleTeam::clearBossBar);
+
+        this.allSortedTeams = this.forceItemBattle.getTeamManager().getTeams().stream()
+                .filter(team -> !team.getTeamMembers().isEmpty())
+                .sorted(Comparator.comparingInt(team -> ((ForceItemBattleTeam) team).getFoundItems().size()).reversed())
+                .toList().reversed();
+
+        this.topTeams = allSortedTeams.stream()
+                .filter(team -> !team.getFoundItems().isEmpty())
+                .limit(3)
+                .toList();
+
+        startIntroTask();
+    }
+
+    private void setupAndTeleportPlayers() {
+        Location worldSpawnPoint = Bukkit.getWorld("world").getSpawnLocation();
+        worldSpawnPoint.getChunk().load();
         int maxPlayers = this.forceItemBattle.getTeamManager().getTeams().size() * 2;
         double radius = 10;
         this.lobbySpawns = LocationUtil.calculateCircleSpawns(worldSpawnPoint, maxPlayers, radius);
         this.nextSpawnIndex = 0;
 
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            teleportPlayerToNextSpawn(player);
-        }
-
-        List<ForceItemBattleTeam> sortedTeams = this.forceItemBattle.getTeamManager().getTeams().stream()
-                .sorted(Comparator.comparingInt(team -> ((ForceItemBattleTeam) team).getFoundItems().size()).reversed())
-                .toList();
-
-        this.resultsTask = new ResultsRunnable(sortedTeams).runTaskTimer(forceItemBattle, 0L, 1L);
+        this.forceItemBattle.getTeamManager().getGamePlayers().values()
+                .forEach(gamePlayer -> this.teleportPlayerToNextSpawn(gamePlayer.getPlayer()));
     }
 
     public void teleportPlayerToNextSpawn(Player player) {
-        if (lobbySpawns.isEmpty()) {
-            player.sendMessage(Component.text("Fehler: Keine Lobby-Spawnpunkte definiert!", NamedTextColor.RED));
-            return;
-        }
-
+        if (lobbySpawns.isEmpty()) return;
         Location spawnLocation = lobbySpawns.get(nextSpawnIndex);
         player.teleport(spawnLocation);
-
         nextSpawnIndex = (nextSpawnIndex + 1) % lobbySpawns.size();
+    }
+
+    private void startIntroTask() {
+        currentResultsTask = new ShowIntroTask().runTaskLater(forceItemBattle, 20L);
+    }
+
+    private void startTeamShowcaseTask(int teamIndex) {
+        currentResultsTask = new TeamShowcaseTask(teamIndex).runTaskTimer(forceItemBattle, 0L, 10L);
+    }
+
+    private void startTeamRevealTask(ForceItemBattleTeam team, int teamRank) {
+        currentResultsTask = new TeamRevealTask(team, teamRank).runTaskLater(forceItemBattle, 0L);
+    }
+
+    private void startFinalRankingTask() {
+        sendFinalRankingToChat();
+        currentResultsTask = new ShutdownCountdownTask().runTaskTimer(forceItemBattle, 0L, 20L);
+    }
+
+    private class ShowIntroTask extends BukkitRunnable {
+        @Override
+        public void run() {
+            Component title = Component.text("Ergebnisse", NamedTextColor.GOLD, TextDecoration.BOLD);
+            Title.Times times = Title.Times.times(Duration.ofSeconds(1), Duration.ofSeconds(3), Duration.ofSeconds(1));
+            audience.showTitle(Title.title(title, Component.empty(), times));
+            audience.playSound(Sound.sound(org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, Sound.Source.MASTER, 0.8f, 1f));
+
+            currentResultsTask = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    startTeamShowcaseTask(0);
+                }
+            }.runTaskLater(forceItemBattle, 100L);
+        }
+    }
+
+    private class TeamShowcaseTask extends BukkitRunnable {
+        private final int teamIndex;
+        private final ForceItemBattleTeam team;
+        private final List<FoundItemData> foundItems;
+        private int currentItemIndex = 0;
+
+        public TeamShowcaseTask(int teamIndex) {
+            this.teamIndex = teamIndex;
+            this.team = topTeams.get(teamIndex);
+            this.foundItems = team.getFoundItems();
+        }
+
+        @Override
+        public void run() {
+            if (currentItemIndex >= foundItems.size()) {
+                this.cancel();
+                startTeamRevealTask(team, teamIndex);
+                return;
+            }
+
+            FoundItemData itemData = foundItems.get(currentItemIndex);
+            Component title = Component.text("Team ?", team.getTeamColor(), TextDecoration.BOLD);
+            Component subtitle = Component.translatable(itemData.item().translationKey())
+                    .append(Component.text(itemData.usedJoker() ? " (Joker)" : "", NamedTextColor.YELLOW));
+
+            audience.showTitle(Title.title(title, subtitle, Title.Times.times(Duration.ZERO, Duration.ofMillis(600), Duration.ofMillis(100))));
+            audience.playSound(Sound.sound(org.bukkit.Sound.UI_BUTTON_CLICK, Sound.Source.MASTER, 0.5f, 1.5f));
+
+            currentItemIndex++;
+        }
+    }
+
+    private class TeamRevealTask extends BukkitRunnable {
+        private final ForceItemBattleTeam team;
+        private final int teamRank;
+
+        public TeamRevealTask(ForceItemBattleTeam team, int teamRank) {
+            this.team = team;
+            this.teamRank = teamRank;
+        }
+
+        @Override
+        public void run() {
+            Component title = Component.text("#" + (topTeams.size() - teamRank) + " " + team.getTeamName(), team.getTeamColor(), TextDecoration.BOLD);
+            Component subtitle = Component.text(team.getFoundItems().size() + " Items gefunden!", NamedTextColor.WHITE);
+            Title.Times times = Title.Times.times(Duration.ofSeconds(1), Duration.ofSeconds(3), Duration.ofSeconds(1));
+
+            audience.showTitle(Title.title(title, subtitle, times));
+            audience.playSound(Sound.sound(org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, Sound.Source.MASTER, 1f, 1.2f));
+
+            currentResultsTask = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    int nextTeamIndex = teamRank + 1;
+                    if (nextTeamIndex < topTeams.size()) {
+                        startTeamShowcaseTask(nextTeamIndex);
+                    } else {
+                        startFinalRankingTask();
+                    }
+                }
+            }.runTaskLater(forceItemBattle, 100L);
+        }
+    }
+
+    private void sendFinalRankingToChat() {
+        audience.sendMessage(Component.text(""));
+        audience.sendMessage(Component.text("▬▬▬▬▬ Endergebnis ▬▬▬▬▬", NamedTextColor.GOLD, TextDecoration.BOLD));
+        audience.sendMessage(Component.text(""));
+
+        int rank = 1;
+        for (ForceItemBattleTeam team : allSortedTeams) {
+            Component rankComponent = Component.text("#" + rank + " ", NamedTextColor.GRAY);
+            Component teamComponent = Component.text(team.getTeamName(), team.getTeamColor());
+            Component itemsComponent = Component.text(" - " + team.getFoundItems().size() + " Items", NamedTextColor.YELLOW);
+
+            audience.sendMessage(rankComponent.append(teamComponent).append(itemsComponent));
+            rank++;
+        }
+
+        audience.sendMessage(Component.text(""));
+        audience.sendMessage(Component.text("▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬", NamedTextColor.GOLD, TextDecoration.BOLD));
+    }
+
+    private class ShutdownCountdownTask extends BukkitRunnable {
+        private int secondsLeft = 20;
+        private final Set<Integer> announcements = Set.of(20, 15, 10, 5, 4, 3, 2, 1);
+
+        @Override
+        public void run() {
+            if (announcements.contains(secondsLeft)) {
+                Component msg = forceItemBattle.getPrefix()
+                        .append(Component.text("Der Server stoppt in ", NamedTextColor.RED))
+                        .append(Component.text(secondsLeft, NamedTextColor.YELLOW))
+                        .append(Component.text(secondsLeft == 1 ? " Sekunde..." : " Sekunden...", NamedTextColor.RED));
+                audience.sendMessage(msg);
+                audience.playSound(Sound.sound(org.bukkit.Sound.BLOCK_NOTE_BLOCK_BASS, Sound.Source.MASTER, 1f, 1f));
+            }
+
+            if (secondsLeft <= 0) {
+                Bukkit.shutdown();
+                this.cancel();
+                return;
+            }
+            secondsLeft--;
+        }
     }
 
     @Override
     public void onLeave() {
-        if (this.resultsTask != null && !this.resultsTask.isCancelled()) {
-            this.resultsTask.cancel();
+        if (this.currentResultsTask != null && !this.currentResultsTask.isCancelled()) {
+            this.currentResultsTask.cancel();
         }
     }
 
     @Override
     public GameStateEnum getGameStateEnum() {
         return GameStateEnum.RESULTS;
-    }
-
-    private class ResultsRunnable extends BukkitRunnable {
-
-        private static final int ITEM_SHOWCASE_DURATION_TICKS = 200;
-        private static final int REVEAL_DURATION_TICKS = 60;
-
-        private final List<ForceItemBattleTeam> allSortedTeams;
-        private final List<ForceItemBattleTeam> topTeams;
-        private final Audience audience = Bukkit.getServer();
-
-        private int currentTeamIndex = 0;
-        private int currentItemIndex = 0;
-        private int tickCounter = 0;
-        private int shutdownTicksLeft = 20 * 20;
-        private boolean hasSentFinalRanking = false;
-        private final Set<Integer> announcementsMade = new HashSet<>();
-
-        public ResultsRunnable(List<ForceItemBattleTeam> sortedTeams) {
-            this.allSortedTeams = sortedTeams;
-            this.topTeams = sortedTeams.stream()
-                    .filter(team -> !team.getFoundItems().isEmpty())
-                    .limit(3)
-                    .toList().reversed();
-        }
-
-        @Override
-        public void run() {
-            if (currentTeamIndex < topTeams.size()) {
-                handleShowcase();
-                tickCounter++;
-            } else {
-                handleShutdown();
-            }
-        }
-
-        private void handleShowcase() {
-            ForceItemBattleTeam team = topTeams.get(currentTeamIndex);
-            List<FoundItemData> foundItems = team.getFoundItems();
-
-            if (tickCounter < ITEM_SHOWCASE_DURATION_TICKS) {
-                if (tickCounter % 10 == 0) {
-                    currentItemIndex = (currentItemIndex + 1) % foundItems.size();
-                    audience.playSound(Sound.sound(org.bukkit.Sound.UI_BUTTON_CLICK, Sound.Source.MASTER, 0.5f, 1.5f));
-                }
-
-                FoundItemData itemData = foundItems.get(currentItemIndex);
-                Component title = Component.text(team.getTeamName(), team.getTeamColor(), TextDecoration.BOLD);
-                Component subtitle = Component.translatable(itemData.item().translationKey())
-                        .append(Component.text(itemData.usedJoker() ? " (Joker)" : "", NamedTextColor.YELLOW));
-                audience.showTitle(Title.title(title, subtitle, Title.Times.times(Duration.ZERO, Duration.ofMillis(200), Duration.ofMillis(50))));
-
-            } else if (tickCounter < ITEM_SHOWCASE_DURATION_TICKS + REVEAL_DURATION_TICKS) {
-                if (tickCounter == ITEM_SHOWCASE_DURATION_TICKS) {
-                    Component title = Component.text(team.getTeamName(), team.getTeamColor(), TextDecoration.BOLD);
-                    Component subtitle = Component.text(team.getFoundItems().size() + " Items gefunden!", NamedTextColor.WHITE);
-                    audience.showTitle(Title.title(title, subtitle, Title.Times.times(Duration.ZERO, Duration.ofMillis(3000), Duration.ofMillis(200))));
-                    audience.playSound(Sound.sound(org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, Sound.Source.MASTER, 1f, 1.2f));
-                }
-            } else {
-                currentTeamIndex++;
-                currentItemIndex = 0;
-                tickCounter = -1;
-            }
-        }
-
-        private void handleShutdown() {
-            if (!hasSentFinalRanking) {
-                sendFinalRankingToChat();
-                hasSentFinalRanking = true;
-                return;
-            }
-
-            if (shutdownTicksLeft <= 0) {
-                Bukkit.shutdown();
-                this.cancel();
-                return;
-            }
-
-            int secondsLeft = (int) Math.ceil(shutdownTicksLeft / 20.0);
-            boolean shouldAnnounce = (secondsLeft <= 5 && secondsLeft > 0) || secondsLeft == 10 || secondsLeft == 15 || secondsLeft == 20;
-
-            if (shouldAnnounce && !announcementsMade.contains(secondsLeft)) {
-                Component msg = forceItemBattle.getPrefix()
-                        .append(Component.text("Der Server stoppt in ", NamedTextColor.RED))
-                        .append(Component.text(secondsLeft, NamedTextColor.YELLOW))
-                        .append(Component.text(secondsLeft == 1 ? " Sekunde" : " Sekunden", NamedTextColor.RED));
-                audience.sendMessage(msg);
-                audience.playSound(Sound.sound(org.bukkit.Sound.BLOCK_NOTE_BLOCK_BASS, Sound.Source.MASTER, 1f, 1f));
-                announcementsMade.add(secondsLeft);
-            }
-            shutdownTicksLeft--;
-        }
-
-        private void sendFinalRankingToChat() {
-            audience.sendMessage(Component.text(""));
-            audience.sendMessage(Component.text("▬▬▬▬▬ Endergebnis ▬▬▬▬▬", NamedTextColor.GOLD, TextDecoration.BOLD));
-            audience.sendMessage(Component.text(""));
-
-            int rank = 1;
-            for (ForceItemBattleTeam team : allSortedTeams) {
-                Component rankComponent = Component.text("#" + rank + " ", NamedTextColor.GRAY);
-                Component teamComponent = Component.text(team.getTeamName(), team.getTeamColor());
-                Component itemsComponent = Component.text(" - " + team.getFoundItems().size() + " Items", NamedTextColor.YELLOW);
-
-                audience.sendMessage(rankComponent.append(teamComponent).append(itemsComponent));
-                rank++;
-            }
-
-            audience.sendMessage(Component.text(""));
-            audience.sendMessage(Component.text("▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬", NamedTextColor.GOLD, TextDecoration.BOLD));
-        }
     }
 }

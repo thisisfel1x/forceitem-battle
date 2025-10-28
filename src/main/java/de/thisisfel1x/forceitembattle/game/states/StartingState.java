@@ -13,6 +13,8 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
+import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
 
 import java.time.Duration;
 
@@ -36,6 +38,12 @@ public class StartingState extends GameState {
         this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::addEffectsForGame);
         this.forceItemBattle.getTeamManager().getTeams().forEach(ForceItemBattleTeam::addJokersToInventory);
 
+        // World specific modifications
+        Bukkit.getWorlds().forEach(world -> {
+            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, true);
+            world.setGameRule(GameRule.DO_WEATHER_CYCLE, true);
+        });
+
         this.taskId = this.forceItemBattle.getServer().getScheduler().scheduleSyncRepeatingTask(this.forceItemBattle, () -> {
             final var audience = this.forceItemBattle.getServer();
 
@@ -44,7 +52,7 @@ public class StartingState extends GameState {
 
                 Component finalTitle = Component.text("GO!", NamedTextColor.GOLD, TextDecoration.BOLD);
                 audience.showTitle(Title.title(finalTitle, Component.empty(),
-                        Title.Times.times(Duration.ofMillis(200), Duration.ofMillis(1000), Duration.ofMillis(500))));
+                        Title.Times.times(Duration.ofMillis(0), Duration.ofMillis(1200), Duration.ofMillis(500))));
 
                 audience.playSound(Sound.sound(SoundEventKeys.ENTITY_PLAYER_LEVELUP, Sound.Source.MASTER, 1f, 1.2f));
 
@@ -63,7 +71,7 @@ public class StartingState extends GameState {
             Component actionBar = Component.text("Das Spiel startet in " + this.counter + sekundenText, NamedTextColor.WHITE);
 
             Title countdownTitle = Title.title(mainTitle, subTitle,
-                    Title.Times.times(Duration.ofMillis(100), Duration.ofMillis(1700), Duration.ofMillis(200)));
+                    Title.Times.times(Duration.ofMillis(0), Duration.ofMillis(2000), Duration.ofMillis(0)));
 
             float pitch = 0.7f + ((startCounter - this.counter) / (float) startCounter);
             Sound plingSound = Sound.sound(SoundEventKeys.BLOCK_NOTE_BLOCK_PLING, Sound.Source.MASTER, 1f, pitch);

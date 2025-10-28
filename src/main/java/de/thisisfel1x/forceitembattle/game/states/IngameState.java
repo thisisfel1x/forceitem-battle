@@ -24,8 +24,11 @@ public class IngameState extends GameState {
 
     @Override
     public void onEnter() {
+        this.forceItemBattle.getSettingsManager().applyAllGameSettings();
+
         this.forceItemBattle.getTeamManager().getTeams().forEach(ForceItemBattleTeam::updateBossBar);
         this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::updateArmorstandItem);
+        this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::unfreezePlayer);
 
         this.taskId = this.forceItemBattle.getServer().getScheduler().scheduleSyncRepeatingTask(this.forceItemBattle, () -> {
             if (this.timeLeftInSeconds <= 0) {

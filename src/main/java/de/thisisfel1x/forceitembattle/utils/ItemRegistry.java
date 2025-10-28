@@ -170,12 +170,14 @@ public class ItemRegistry {
                 name.contains("PATTERN") ||
                 name.contains("DEAD") ||
                 name.contains("CORAL") ||
+                name.contains("LIGHT") ||
                 name.contains("PETRIFIED") ||
                 name.contains("WITHER_ROSE") ||
                 name.contains("FERMENTED") ||
                 name.contains("RECOVERY_") ||
                 name.contains("SPECTRAL_") ||
                 name.contains("HONEY_") ||
+                name.contains("TEST_") ||
                 name.contains("SPONGE") ||
                 name.contains("PALE") ||
                 name.contains("CREAKING") ||

@@ -9,7 +9,10 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.CreatureSpawnEvent;
@@ -28,6 +31,8 @@ public class GamePlayer {
     private ForceItemBattleTeam forceItemBattleTeam;
 
     private boolean spectator = false;
+
+    private Entity lastPassenger;
 
     public GamePlayer(Player player) {
         this.name = player.getName();
@@ -100,6 +105,11 @@ public class GamePlayer {
         ItemStack teamSelector = ItemBuilder.from(Material.AMETHYST_SHARD).name(Component.text("Wähle dein Team", NamedTextColor.WHITE)).glow().build();
         this.getPlayer().getInventory().setItem(0, teamSelector);
 
+        if (this.getPlayer().hasPermission("forceitembattle.settings")) {
+            ItemStack settingsItem = ItemBuilder.from(Material.BRUSH).name(Component.text("Einstellungen", NamedTextColor.RED)).glow().build();
+            this.getPlayer().getInventory().setItem(1, settingsItem);
+        }
+
     }
 
     public void setSpectatorInventory() {
@@ -125,17 +135,42 @@ public class GamePlayer {
         this.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 30, 0));
     }
 
+    public void freezePlayer() {
+        if (this.isSpectator()) return;
+
+        AttributeInstance attributeInstance = this.getPlayer().getAttribute(Attribute.MOVEMENT_SPEED);
+        if (attributeInstance != null)
+            attributeInstance.setBaseValue(0.00001);
+    }
+
+    public void unfreezePlayer() {
+        if (this.isSpectator()) return;
+
+        AttributeInstance attributeInstance = this.getPlayer().getAttribute(Attribute.MOVEMENT_SPEED);
+        if (attributeInstance != null)
+            attributeInstance.setBaseValue(0.1);
+    }
+
     public void updateArmorstandItem() {
+        if(this.isSpectator()) return;
+
         this.getPlayer().getPassengers().forEach(passenger -> {
             this.getPlayer().removePassenger(passenger);
             passenger.remove();
         });
 
-        this.getPlayer().addPassenger(this.getPlayer().getWorld().spawnEntity(this.getPlayer().getLocation(), EntityType.ARMOR_STAND, CreatureSpawnEvent.SpawnReason.CUSTOM, entity -> {
+        if (this.lastPassenger != null) {
+            this.lastPassenger.remove();
+        }
+
+        this.getPlayer().addPassenger(this.getPlayer().getWorld().spawnEntity(this.getPlayer().getLocation(),
+                EntityType.ARMOR_STAND, CreatureSpawnEvent.SpawnReason.CUSTOM, entity -> {
             ArmorStand armorStand = (ArmorStand) entity;
 
             armorStand.setInvisible(true);
             armorStand.setItem(EquipmentSlot.HEAD, this.getTeam().getCurrentItem());
+
+            this.lastPassenger = armorStand;
         }));
     }
 

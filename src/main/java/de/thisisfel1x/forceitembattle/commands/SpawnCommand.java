@@ -8,13 +8,14 @@ import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
-public class BackPackCommand implements BasicCommand {
+public class SpawnCommand implements BasicCommand {
 
     private final ForceItemBattle forceItemBattle;
 
-    public BackPackCommand(ForceItemBattle forceItemBattle) {
+    public SpawnCommand(ForceItemBattle forceItemBattle) {
         this.forceItemBattle = forceItemBattle;
     }
 
@@ -27,21 +28,19 @@ public class BackPackCommand implements BasicCommand {
 
         GameManager gameManager = forceItemBattle.getGameManager();
         if (gameManager.getCurrentGameState().getGameStateEnum() != GameStateEnum.INGAME) {
-            player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Du kannst dein Backpack nur während dem Spiel öffnen!", NamedTextColor.RED)));
-            return;
-        }
-
-        if (!((boolean) this.forceItemBattle.getSettingsManager().getSetting("BACKPACK").getValue())) {
-            player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Der Backpack ist deaktiviert", NamedTextColor.RED)));
+            player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Dieser Befehel kann nur während dem Spiel ausgeführt werden!", NamedTextColor.RED)));
             return;
         }
 
         GamePlayer gamePlayer = forceItemBattle.getTeamManager().getGamePlayer(player.getUniqueId());
-        if (gamePlayer == null || !gamePlayer.isInTeam()) {
-            player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Du bist in keinem Team!", NamedTextColor.RED)));
+        if (gamePlayer == null || gamePlayer.isSpectator()) {
+            player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Du bist kein Spieler!", NamedTextColor.RED)));
             return;
         }
 
-        player.openInventory(gamePlayer.getTeam().getBackpack());
+        Location spawnLocation = player.getWorld().getHighestBlockAt(player.getWorld().getSpawnLocation())
+                .getLocation().toCenterLocation().add(0, 0.5, 0);
+        player.teleport(spawnLocation);
+
     }
 }
