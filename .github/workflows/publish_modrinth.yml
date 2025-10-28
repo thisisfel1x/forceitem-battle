@@ -1,11 +1,9 @@
-# .github/workflows/publish_modrinth.yml
-
-name: Publish to Modrinth on Release
+name: Publish to Modrinth on Main Merge
 
 on:
-  release:
-    types:
-      - published
+  push:
+    branches:
+      - master
 
 jobs:
   publish:
@@ -26,17 +24,21 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Get Commit SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: Build with Gradle
-        run: ./gradlew shadowJar -Pversion=${{ github.event.release.tag_name }}
+        run: ./gradlew shadowJar -Pversion=forceitembattle-${{ github.sha }}
 
       - name: Upload to Modrinth
         uses: cloudnode-pro/modrinth-publish@v2
         with:
           token: ${{ secrets.MODRINTH_TOKEN }}
           project: 'awKBElnR'
-          name: ${{ github.event.release.name }}
-          version: ${{ github.event.release.tag_name }}
-          changelog: ${{ github.event.release.body }}
+          name: 'Build ${{ steps.vars.outputs.sha_short }}'
+          version: ${{ github.sha }}
+          changelog: ''
           loaders: |-
             paper
           game-versions: |-
