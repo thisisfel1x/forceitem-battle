@@ -127,16 +127,25 @@ public class ForceItemBattleTeam {
     }
 
     public void updateBossBar() {
-        String materialKey = this.getCurrentItem().getType().getKey().toString();
+        if (ForceItemBattle.getInstance().getIconManager().isLoaded()) {
+            Component icon = ForceItemBattle.getInstance().getIconManager().getIconSafe("fib_" + this.getCurrentItem().getType().name().toLowerCase());
+            this.bossBar.name(
+                    icon.append(Component.text(" "))
+                            .append(Component.translatable(this.getCurrentItem().translationKey()))
+            );
+            System.out.println("fib_" + this.getCurrentItem().getType().name().toLowerCase());
+        } else {
+            String materialKey = this.getCurrentItem().getType().getKey().toString();
 
-        String texturePath = ForceItemBattle.getInstance().getTextureMap().getOrDefault(materialKey, "item/barrier");
+            String texturePath = ForceItemBattle.getInstance().getTextureMap().getOrDefault(materialKey, "item/barrier");
 
-        Component sprite = Component.object(ObjectContents.sprite(Key.key(texturePath)));
+            Component sprite = Component.object(ObjectContents.sprite(Key.key(texturePath)));
 
-        this.bossBar.name(
-                sprite.append(Component.text(" "))
-                        .append(Component.translatable(this.getCurrentItem().translationKey()))
-        );
+            this.bossBar.name(
+                    sprite.append(Component.text(" "))
+                            .append(Component.translatable(this.getCurrentItem().translationKey()))
+            );
+        }
     }
 
     public void clearBossBar() {

@@ -16,17 +16,15 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class ForceItemBattleScoreboardManager {
 
     private final ForceItemBattle forceItemBattle;
     private final TeamManager teamManager;
     private final Map<UUID, Sidebar> playerSidebars = new HashMap<>();
+
+    private final Component scoreboardTitle = Component.text("\ue64c\ue64b\ue64d\ue64b\ue64e\ue64b\ue650\ue64b\ue651");
 
     public ForceItemBattleScoreboardManager(ForceItemBattle forceItemBattle) {
         this.forceItemBattle = forceItemBattle;
@@ -91,16 +89,15 @@ public class ForceItemBattleScoreboardManager {
     }
 
     private ComponentSidebarLayout buildLobbyLayout() {
-        SidebarComponent title = SidebarComponent.staticLine(
-                forceItemBattle.miniMessage().deserialize("<dark_gray>» <aqua>teamcrimx<bold>DE</bold> <dark_gray>«"));
+        SidebarComponent title = SidebarComponent.staticLine(this.scoreboardTitle);
 
         SidebarComponent lines = SidebarComponent.builder()
                 .addBlankLine()
-                .addStaticLine(Component.text("Spieler:", NamedTextColor.WHITE))
+                //.addStaticLine(Component.text("Spieler:", NamedTextColor.WHITE))
                 .addDynamicLine(() -> {
                     int online = Bukkit.getOnlinePlayers().size();
                     int max = forceItemBattle.getTeamManager().getTeams().size() * 2;
-                    return forceItemBattle.miniMessage().deserialize("<dark_gray>● <green>" + online + "<gray>/<white>" + max);
+                    return forceItemBattle.miniMessage().deserialize("<white>\ue652 <dark_gray>● <green>" + online + "<gray>/<white>" + max);
                 })
                 .addBlankLine()
                 .build();
@@ -109,8 +106,7 @@ public class ForceItemBattleScoreboardManager {
     }
 
     private ComponentSidebarLayout buildIngameLayout() {
-        SidebarComponent title = SidebarComponent.staticLine(
-                forceItemBattle.miniMessage().deserialize("<dark_gray>» <aqua>teamcrimx<bold>DE</bold> <dark_gray>«"));
+        SidebarComponent title = SidebarComponent.staticLine(this.scoreboardTitle);
 
         var linesBuilder = SidebarComponent.builder();
 

@@ -9,6 +9,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.ArmorStand;
@@ -18,6 +19,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -106,7 +108,10 @@ public class GamePlayer {
         this.getPlayer().getInventory().setItem(0, teamSelector);
 
         if (this.getPlayer().hasPermission("forceitembattle.settings")) {
-            ItemStack settingsItem = ItemBuilder.from(Material.BRUSH).name(Component.text("Einstellungen", NamedTextColor.RED)).glow().build();
+            ItemStack settingsItem = ItemBuilder.from(Material.PAPER).name(Component.text("Einstellungen", NamedTextColor.RED)).glow().build();
+            settingsItem.editMeta(itemMeta -> {
+                itemMeta.setItemModel(NamespacedKey.fromString("fib:win"));
+            });
             this.getPlayer().getInventory().setItem(1, settingsItem);
         }
 

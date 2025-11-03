@@ -13,6 +13,7 @@ import de.thisisfel1x.forceitembattle.listeners.player.*;
 import de.thisisfel1x.forceitembattle.settings.SettingsManager;
 import de.thisisfel1x.forceitembattle.teams.TeamManager;
 import de.thisisfel1x.forceitembattle.utils.ForceItemBattleScoreboardManager;
+import de.thisisfel1x.forceitembattle.utils.IconManager;
 import de.thisisfel1x.forceitembattle.utils.ItemRegistry;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -44,6 +45,8 @@ public final class ForceItemBattle extends JavaPlugin {
     private GameManager gameManager;
     private TeamManager teamManager;
 
+    private IconManager iconManager;
+
     private ScoreboardLibrary scoreboardLibrary;
     private ForceItemBattleScoreboardManager forceItemBattleScoreboardManager;
     private SettingsManager settingsManager;
@@ -61,6 +64,8 @@ public final class ForceItemBattle extends JavaPlugin {
     public void onEnable() {
         instance = this;
 
+        this.iconManager = new IconManager();
+        this.iconManager.loadIcons();
         this.loadTextureMap();
 
         ItemRegistry.initialize();
@@ -158,7 +163,6 @@ public final class ForceItemBattle extends JavaPlugin {
         getLogger().info(textureMap.size() + " Textur-Mappings wurden erfolgreich geladen.");
     }
 
-    // Getter, damit andere Klassen darauf zugreifen können
     public Map<String, String> getTextureMap() {
         return textureMap;
     }
@@ -169,6 +173,10 @@ public final class ForceItemBattle extends JavaPlugin {
 
     public TeamManager getTeamManager() {
         return teamManager;
+    }
+
+    public IconManager getIconManager() {
+        return iconManager;
     }
 
     public SettingsManager getSettingsManager() {
