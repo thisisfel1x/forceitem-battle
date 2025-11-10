@@ -13,6 +13,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
+import java.util.UUID;
+
 public class JoinListener implements Listener {
 
     private final ForceItemBattle forceItemBattle;
@@ -29,6 +31,8 @@ public class JoinListener implements Listener {
 
         event.joinMessage(this.forceItemBattle.getPrefix()
                 .append(Component.text(player.getName() + " hat das Spiel betreten", NamedTextColor.GRAY)));
+
+        player.setResourcePack("https://drive.google.com/uc?export=download&id=1zb09v_T6YS87vgplD3uMa2UtvD1_jieC", "", true, Component.text("Dieses Pack wird benötigt!"));
 
         if (currentGameState == GameStateEnum.IDLE) {
             GamePlayer gamePlayer = new GamePlayer(player);

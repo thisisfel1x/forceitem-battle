@@ -64,7 +64,7 @@ public class ResultsState extends GameState {
 
         this.topTeams = allSortedTeams.stream()
                 .filter(team -> !team.getFoundItems().isEmpty())
-                .limit(3)
+                //.limit(3)
                 .toList();
 
         startIntroTask();

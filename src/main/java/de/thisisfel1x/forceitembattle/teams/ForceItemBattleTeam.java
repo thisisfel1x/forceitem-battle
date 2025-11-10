@@ -133,7 +133,7 @@ public class ForceItemBattleTeam {
                     icon.append(Component.text(" "))
                             .append(Component.translatable(this.getCurrentItem().translationKey()))
             );
-            System.out.println("fib_" + this.getCurrentItem().getType().name().toLowerCase());
+            //System.out.println("fib_" + this.getCurrentItem().getType().name().toLowerCase());
         } else {
             String materialKey = this.getCurrentItem().getType().getKey().toString();
 
