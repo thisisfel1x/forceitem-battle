@@ -60,7 +60,7 @@ public class ResultsState extends GameState {
         this.allSortedTeams = this.forceItemBattle.getTeamManager().getTeams().stream()
                 .filter(team -> !team.getTeamMembers().isEmpty())
                 .sorted(Comparator.comparingInt(team -> ((ForceItemBattleTeam) team).getFoundItems().size()).reversed())
-                .toList().reversed();
+                .toList();
 
         this.topTeams = allSortedTeams.stream()
                 .filter(team -> !team.getFoundItems().isEmpty())

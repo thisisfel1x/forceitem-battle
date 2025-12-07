@@ -9,6 +9,7 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 public class TopCommand implements BasicCommand {
@@ -38,8 +39,16 @@ public class TopCommand implements BasicCommand {
             return;
         }
 
-        Location topLocation = player.getWorld().getHighestBlockAt(player.getLocation())
-                .getLocation().toCenterLocation().add(0, 0.5, 0);
-        player.teleport(topLocation);
+        if (player.getWorld().getEnvironment() == World.Environment.NETHER) {
+            player.sendMessage(this.forceItemBattle.getPrefix()
+                    .append(Component.text("Der Command ist nur für die Overworld nutzbar.",
+                            NamedTextColor.RED)));
+        } else {
+            Location topLocation = player.getWorld().getHighestBlockAt(player.getLocation())
+                    .getLocation().toCenterLocation().add(0, 0.5, 0);
+            player.teleport(topLocation);
+        }
+
+
     }
 }

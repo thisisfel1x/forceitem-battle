@@ -28,13 +28,19 @@ public class TeamManager {
             "#00AAAA",
             "#AAAAAA",
             "#F44336",
-            "#2196F3"
+            "#2196F3",
+            "#E91E63",
+            "#9C27B0",
+            "#00E676",
+            "#FF9100",
+            "#CDDC39",
+            "#607D8B"
     );
 
     public TeamManager(ForceItemBattle forceItemBattle) {
         this.forceItemBattle = forceItemBattle;
 
-        this.setupTeams(8);
+        this.setupTeams(14);
     }
 
     private void setupTeams(int amount) {

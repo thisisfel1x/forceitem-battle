@@ -25,7 +25,7 @@ public class TeamSelectorInventory {
     public void openGui(Player player) {
         Gui gui = Gui.gui()
                 .title(Component.text("Teamauswahl"))
-                .rows(1)
+                .rows(2)
                 .create();
 
         for (ForceItemBattleTeam forceItemBattleTeam : this.forceItemBattle.getTeamManager().getTeams()) {
