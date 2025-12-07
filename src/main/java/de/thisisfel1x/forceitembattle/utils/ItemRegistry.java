@@ -172,6 +172,9 @@ public class ItemRegistry {
                 name.contains("CORAL") ||
                 name.contains("LIGHT") ||
                 name.contains("PETRIFIED") ||
+                name.contains("NETHER_STAR") ||
+                name.contains("SNIFFER_EGG") ||
+                name.contains("DIRT_PATH") ||
                 name.contains("WITHER_ROSE") ||
                 name.contains("FERMENTED") ||
                 name.contains("RECOVERY_") ||
@@ -180,6 +183,7 @@ public class ItemRegistry {
                 name.contains("TEST_") ||
                 name.contains("SPONGE") ||
                 name.contains("PALE") ||
+                name.contains("TORCHFLOWER") ||
                 name.contains("CREAKING") ||
                 name.contains("RESIN") ||
                 name.contains("PHANTOM_MEMBRANE") ||
@@ -189,6 +193,7 @@ public class ItemRegistry {
                 name.contains("TRIAL_KEY") ||
                 name.contains("SPAWNER") ||
                 name.contains("TRIDENT") ||
+                name.contains("PITCHER_POD") ||
                 name.contains("WIND_CHARGE") ||
                 name.contains("MACE") ||
                 name.contains("END") ||
@@ -201,6 +206,7 @@ public class ItemRegistry {
                 name.contains("_HEAD") ||
                 name.contains("FRAME") ||
                 name.contains("DRAGON_EGG") ||
+                name.contains("BLUE_ICE") ||
                 name.contains("DEBUG_STICK");
     }
 }
