@@ -3,16 +3,18 @@ package de.thisisfel1x.forceitembattle.gui;
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import de.thisisfel1x.forceitembattle.teams.ForceItemBattleTeam;
-import dev.triumphteam.gui.builder.item.ItemBuilder;
-import dev.triumphteam.gui.guis.Gui;
-import dev.triumphteam.gui.guis.GuiItem;
+import de.thisisfel1x.forceitembattle.utils.Items;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class TeamSelectorInventory {
 
@@ -23,45 +25,63 @@ public class TeamSelectorInventory {
     }
 
     public void openGui(Player player) {
-        Gui gui = Gui.gui()
-                .title(Component.text("Teamauswahl"))
-                .rows(2)
-                .create();
+        List<ForceItemBattleTeam> teams = this.forceItemBattle.getTeamManager().getTeams();
+        SimpleGui gui = new SimpleGui(Component.text("Teamauswahl"), (teams.size() + 8) / 9);
 
-        for (ForceItemBattleTeam forceItemBattleTeam : this.forceItemBattle.getTeamManager().getTeams()) {
-            GuiItem teamItem = ItemBuilder.from(this.getItemStackForTeam(forceItemBattleTeam)).asGuiItem(event -> {
-                if (event.getWhoClicked() instanceof Player clickedPlayer) {
-                    GamePlayer gamePlayer = this.forceItemBattle.getTeamManager().getGamePlayer(clickedPlayer.getUniqueId());
-                    if (gamePlayer.isInTeam()) {
-                        gamePlayer.getTeam().removePlayer(gamePlayer);
-                    }
+        for (ForceItemBattleTeam forceItemBattleTeam : teams) {
+            gui.addItem(this.getItemStackForTeam(forceItemBattleTeam), event -> {
+                if (!(event.getWhoClicked() instanceof Player clickedPlayer)) return;
 
-                    forceItemBattleTeam.addPlayer(gamePlayer);
+                GamePlayer gamePlayer = this.forceItemBattle.getTeamManager().getGamePlayer(clickedPlayer.getUniqueId());
+                if (gamePlayer == null || gamePlayer.isSpectator()) return;
+
+                ForceItemBattleTeam previousTeam = gamePlayer.getTeam();
+                if (previousTeam == forceItemBattleTeam) {
                     clickedPlayer.closeInventory();
+                    return;
                 }
+
+                // Check first: a full team must not cost the player the old team
+                if (forceItemBattleTeam.isFull()) {
+                    clickedPlayer.sendMessage(this.forceItemBattle.getPrefix()
+                            .append(Component.text("Dieses Team ist bereits voll", NamedTextColor.RED)));
+                    return;
+                }
+
+                if (previousTeam != null) {
+                    previousTeam.removePlayer(gamePlayer);
+                }
+
+                forceItemBattleTeam.addPlayer(gamePlayer);
+                clickedPlayer.closeInventory();
             });
-            gui.addItem(teamItem);
         }
 
         gui.open(player);
     }
 
     private ItemStack getItemStackForTeam(ForceItemBattleTeam forceItemBattleTeam) {
-        Component[] lore = new Component[2];
+        List<Component> lore = new ArrayList<>();
         for (int i = 0; i < forceItemBattleTeam.getMaxTeamSize(); i++) {
-            try {
-                lore[i] = Component.text("- ", NamedTextColor.DARK_GRAY).append(Component.text(forceItemBattleTeam.getTeamMembers().get(i).getName(), forceItemBattleTeam.getTeamColor())).decoration(TextDecoration.ITALIC, false);
-            } catch (IndexOutOfBoundsException ignored) {
-                lore[i] = Component.text("- ", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false);
+            Component line = Component.text("- ", NamedTextColor.DARK_GRAY);
+            if (i < forceItemBattleTeam.getTeamMembers().size()) {
+                line = line.append(Component.text(forceItemBattleTeam.getTeamMembers().get(i).getName(),
+                        forceItemBattleTeam.getTeamColor()));
             }
+            lore.add(Items.noItalic(line));
         }
 
-        return ItemBuilder.from(Material.LEATHER_BOOTS)
-                .name(Component.text(forceItemBattleTeam.getTeamName(), forceItemBattleTeam.getTeamColor())
-                        .append(Component.text(" (" + forceItemBattleTeam.getCurrentTeamSize() + "/" + forceItemBattleTeam.getMaxTeamSize() + ")")).decoration(TextDecoration.ITALIC, false))
-                .color(Color.fromRGB(forceItemBattleTeam.getTeamColor().red(), forceItemBattleTeam.getTeamColor().green(), forceItemBattleTeam.getTeamColor().blue()))
-                .lore(lore)
-                .build();
+        Component name = Component.text(forceItemBattleTeam.getTeamName(), forceItemBattleTeam.getTeamColor())
+                .append(Component.text(" (" + forceItemBattleTeam.getCurrentTeamSize() + "/" + forceItemBattleTeam.getMaxTeamSize() + ")"));
+
+        ItemStack itemStack = Items.named(Material.LEATHER_BOOTS, name);
+        itemStack.editMeta(LeatherArmorMeta.class, meta -> {
+            meta.setColor(Color.fromRGB(forceItemBattleTeam.getTeamColor().red(),
+                    forceItemBattleTeam.getTeamColor().green(), forceItemBattleTeam.getTeamColor().blue()));
+            meta.addItemFlags(ItemFlag.HIDE_DYE, ItemFlag.HIDE_ATTRIBUTES);
+            meta.lore(lore);
+        });
+        return itemStack;
     }
 
 }

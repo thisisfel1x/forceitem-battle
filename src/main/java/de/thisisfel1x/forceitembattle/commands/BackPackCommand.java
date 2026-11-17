@@ -31,13 +31,13 @@ public class BackPackCommand implements BasicCommand {
             return;
         }
 
-        if (!((boolean) this.forceItemBattle.getSettingsManager().getSetting("BACKPACK").getValue())) {
+        if (!this.forceItemBattle.getSettingsManager().isEnabled("BACKPACK")) {
             player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Der Backpack ist deaktiviert", NamedTextColor.RED)));
             return;
         }
 
         GamePlayer gamePlayer = forceItemBattle.getTeamManager().getGamePlayer(player.getUniqueId());
-        if (gamePlayer == null || !gamePlayer.isInTeam()) {
+        if (gamePlayer == null || gamePlayer.isSpectator() || !gamePlayer.isInTeam()) {
             player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Du bist in keinem Team!", NamedTextColor.RED)));
             return;
         }

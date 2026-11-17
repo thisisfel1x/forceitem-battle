@@ -28,20 +28,19 @@ public class QuitListener implements Listener {
         event.quitMessage(this.forceItemBattle.getPrefix()
                 .append(Component.text(player.getName() + " hat das Spiel verlassen", NamedTextColor.GRAY)));
 
-        if (currentGameState == GameStateEnum.IDLE) {
-            // Cleanup GamePlayer
-            if (gamePlayer.isInTeam()) {
-                gamePlayer.getTeam().removePlayer(gamePlayer);
-            }
-
-            // Finally, remove GamePlayer from HashMap
-            this.forceItemBattle.getTeamManager().getGamePlayers().remove(player.getUniqueId());
-        } else {
-            // We are ingame. To allow rejoining, we don't want to remove non-spectator gameplayers
-            if (gamePlayer.isSpectator()) {
+        if (gamePlayer != null) {
+            if (currentGameState == GameStateEnum.IDLE) {
+                if (gamePlayer.isInTeam()) {
+                    gamePlayer.getTeam().removePlayer(gamePlayer);
+                }
+                this.forceItemBattle.getTeamManager().getGamePlayers().remove(player.getUniqueId());
+            } else if (gamePlayer.isSpectator()) {
+                this.forceItemBattle.getForceItemBattleScoreboardManager().removePlayerFromTeam(gamePlayer);
                 this.forceItemBattle.getTeamManager().getGamePlayers().remove(player.getUniqueId());
             } else {
-                // TODO do nothing for now
+                // Running game: keep the GamePlayer (and its team) so the player can rejoin,
+                // but do not leave the item armor stand behind in the world
+                gamePlayer.removeArmorstand();
             }
         }
 

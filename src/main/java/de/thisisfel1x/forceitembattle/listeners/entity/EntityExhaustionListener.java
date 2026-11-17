@@ -16,7 +16,7 @@ public class EntityExhaustionListener implements Listener {
 
     @EventHandler
     public void onEntityExhaustion(EntityExhaustionEvent event) {
-        if(!(event.getEntity() instanceof Player player)) return;
+        if (!(event.getEntity() instanceof Player)) return;
 
         event.setCancelled(true);
     }

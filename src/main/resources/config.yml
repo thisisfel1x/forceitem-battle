@@ -1,0 +1,37 @@
+# ForceItemBattle configuration
+
+resource-pack:
+  # Send the custom resource pack (item icons, scoreboard title glyphs) on join
+  enabled: true
+  # Direct download link. Google Drive has download quotas - for bigger events prefer
+  # a real file host (e.g. a GitHub release asset).
+  url: "https://drive.google.com/uc?export=download&id=1zb09v_T6YS87vgplD3uMa2UtvD1_jieC"
+  # SHA-1 of the pack zip (40 hex characters). Strongly recommended: without it clients
+  # cannot cache the pack and will not notice pack updates reliably.
+  sha1: ""
+  # Kick players that decline the pack
+  required: true
+
+teams:
+  # Number of teams (max. 18)
+  amount: 14
+  # Players per team
+  size: 2
+
+jokers:
+  # true:  the joker amount from /start is given once per team (fair for mixed team sizes)
+  # false: every team member receives the full joker amount
+  per-team: true
+
+scoreboard:
+  # Show the live team ranking in the sidebar while the game is running
+  show-ranking-ingame: false
+
+results:
+  # Stop the server after the results have been shown
+  shutdown-server: true
+  shutdown-delay-seconds: 20
+
+items:
+  # Additional material names that should never be chosen, e.g. [ENDER_CHEST, SPORE_BLOSSOM]
+  additional-banned: []

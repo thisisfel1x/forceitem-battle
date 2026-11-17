@@ -2,82 +2,78 @@ import xyz.jpenilla.runtask.task.AbstractRun
 
 plugins {
     id 'java'
-    id("xyz.jpenilla.run-paper") version "3.0.2"
-    id("com.gradleup.shadow") version "9.2.2"
+    id 'xyz.jpenilla.run-paper' version '3.1.0'
+    id 'com.gradleup.shadow' version '9.6.1'
 }
 
 group = 'de.thisisfel1x'
-version = '1.0-SNAPSHOT'
+// 'version' is defined in gradle.properties (single source of truth for jar, plugin.yml and releases)
+
+def paperVersion = '26.3'
+def targetJavaVersion = 25
+def scoreboardLibraryVersion = '2.8.3'
 
 repositories {
     mavenCentral()
     maven {
-        name = "papermc-repo"
-        url = "https://repo.papermc.io/repository/maven-public/"
+        name = 'papermc-repo'
+        url = 'https://repo.papermc.io/repository/maven-public/'
     }
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.9-R0.1-SNAPSHOT")
-    implementation("dev.triumphteam:triumph-gui:3.1.13")
-    // https://mvnrepository.com/artifact/org.apache.commons/commons-text
-    implementation("org.apache.commons:commons-text:1.14.0")
-    implementation("net.kyori:adventure-text-minimessage:4.25.0")
+    // Paper already ships Adventure (incl. MiniMessage), Gson and SnakeYAML - nothing of that is shaded.
+    compileOnly("io.papermc.paper:paper-api:${paperVersion}.build.+")
 
-    // https://mvnrepository.com/artifact/com.google.code.gson/gson
-    implementation("com.google.code.gson:gson:2.13.2")
-
-    def scoreboardLibraryVersion = "2.4.3"
-    implementation("net.megavex:scoreboard-library-api:$scoreboardLibraryVersion")
-    runtimeOnly("net.megavex:scoreboard-library-implementation:$scoreboardLibraryVersion")
-    runtimeOnly("net.megavex:scoreboard-library-modern:$scoreboardLibraryVersion") // 1.17+
+    // The only shaded (and relocated) dependency
+    implementation("net.megavex:scoreboard-library-api:${scoreboardLibraryVersion}")
+    runtimeOnly("net.megavex:scoreboard-library-implementation:${scoreboardLibraryVersion}")
 }
 
-tasks {
-    runServer {
-        // Configure the Minecraft version for our task.
-        // This is the only required configuration besides applying the plugin.
-        // Your plugin's jar (or shadowJar if present) will be used automatically.
-        minecraftVersion("1.21.10")
-    }
-}
-
-def targetJavaVersion = 21
 java {
-    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
-    sourceCompatibility = javaVersion
-    targetCompatibility = javaVersion
-    if (JavaVersion.current() < javaVersion) {
-        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
-    }
+    toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-
-    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
-        options.release.set(targetJavaVersion)
-    }
+    options.release.set(targetJavaVersion)
+    options.compilerArgs.add('-Xlint:deprecation')
 }
 
 processResources {
-    def props = [version: version]
+    def props = [version: version, apiVersion: paperVersion]
     inputs.properties props
-    filteringCharset 'UTF-8'
+    filteringCharset = 'UTF-8'
     filesMatching('plugin.yml') {
         expand props
     }
 }
 
-tasks.withType(AbstractRun) {
-    javaLauncher = javaToolchains.launcherFor {
-        vendor = JvmVendorSpec.JETBRAINS
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-    jvmArgs("-XX:+AllowEnhancedClassRedefinition")
+// The shaded jar is the one and only artifact: build/libs/forceitem-battle-<version>.jar
+jar {
+    enabled = false
 }
 
-
 shadowJar {
-    relocate("dev.triumphteam.gui", "de.thisisfel1x.forceitembattle.gui")
+    archiveClassifier.set('')
+    relocate('net.megavex.scoreboardlibrary', 'de.thisisfel1x.forceitembattle.libs.scoreboardlibrary')
+}
+
+assemble {
+    dependsOn shadowJar
+}
+
+tasks {
+    runServer {
+        minecraftVersion(paperVersion)
+    }
+}
+
+// Local dev server only: JetBrains Runtime allows hot swapping with enhanced class redefinition
+tasks.withType(AbstractRun).configureEach {
+    javaLauncher = javaToolchains.launcherFor {
+        vendor = JvmVendorSpec.JETBRAINS
+        languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
+    jvmArgs('-XX:+AllowEnhancedClassRedefinition')
 }

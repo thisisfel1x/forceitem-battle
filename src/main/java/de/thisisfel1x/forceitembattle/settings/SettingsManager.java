@@ -38,6 +38,14 @@ public class SettingsManager {
         return this.settingsMap.get(name);
     }
 
+    /**
+     * @return the value of a boolean setting, {@code false} if the setting does not exist
+     */
+    public boolean isEnabled(String name) {
+        return this.settingsMap.get(name) instanceof BooleanSetting booleanSetting
+                && Boolean.TRUE.equals(booleanSetting.getValue());
+    }
+
 
     public void applyAllGameSettings() {
         for (AbstractSetting<?> setting : settings) {

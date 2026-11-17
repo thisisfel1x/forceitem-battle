@@ -27,7 +27,7 @@ public class BlockBreakListener implements Listener {
         Player player = event.getPlayer();
         GamePlayer gamePlayer = this.forceItemBattle.getTeamManager().getGamePlayer(player.getUniqueId());
 
-        if (gamePlayer.isSpectator()) {
+        if (gamePlayer == null || gamePlayer.isSpectator()) {
             event.setCancelled(true);
             return;
         }

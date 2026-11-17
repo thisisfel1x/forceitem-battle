@@ -32,7 +32,6 @@ public class IngameState extends GameState {
 
         this.taskId = this.forceItemBattle.getServer().getScheduler().scheduleSyncRepeatingTask(this.forceItemBattle, () -> {
             if (this.timeLeftInSeconds <= 0) {
-                // TODO
                 this.forceItemBattle.getServer().getScheduler().cancelTask(this.taskId);
 
                 ResultsState resultsState = new ResultsState(this.forceItemBattle.getGameManager());
@@ -40,17 +39,16 @@ public class IngameState extends GameState {
                 return;
             }
 
-            //this.forceItemBattle.getForceItemBattleScoreboardManager().updateSidebar();
+            // Safety net for every way of obtaining an item that is not covered by an event
+            this.forceItemBattle.getItemTracker().scanInventories();
 
             int minutes = this.timeLeftInSeconds / 60;
             int seconds = this.timeLeftInSeconds % 60;
             Component timeComponent = Component.text(String.format("%02d:%02d", minutes, seconds), NamedTextColor.YELLOW);
 
             for (Player player : this.forceItemBattle.getServer().getOnlinePlayers()) {
-                GamePlayer gamePlayer = this.forceItemBattle.getTeamManager().getGamePlayer(player.getUniqueId());
-
                 Component actionBarMessage = timeComponent;
-                if (gamePlayer.isSpectator()) {
+                if (this.forceItemBattle.getTeamManager().isSpectator(player)) {
                     actionBarMessage = actionBarMessage.append(Component.text(" | Spectator", NamedTextColor.GRAY));
                 }
                 player.sendActionBar(actionBarMessage);

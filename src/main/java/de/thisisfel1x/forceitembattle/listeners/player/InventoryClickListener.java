@@ -2,13 +2,10 @@ package de.thisisfel1x.forceitembattle.listeners.player;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
-import de.thisisfel1x.forceitembattle.player.GamePlayer;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryType;
 
 public class InventoryClickListener implements Listener {
 
@@ -20,26 +17,15 @@ public class InventoryClickListener implements Listener {
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player)) return;
-
-        Player player = (Player) event.getWhoClicked();
-        GamePlayer gamePlayer = this.forceItemBattle.getTeamManager().getGamePlayer(player.getUniqueId());
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        if (event.getClickedInventory() == null) return;
 
         GameStateEnum gameStateEnum = this.forceItemBattle.getGameManager().getCurrentGameState().getGameStateEnum();
 
-        if (event.getClickedInventory() == null) return;
-
-        switch (gameStateEnum) {
-            case IDLE, STARTING, RESULTS -> event.setCancelled(true);
-            case INGAME -> {
-                if (gamePlayer.isSpectator()) {
-                    event.setCancelled(true);
-                    return;
-                }
-                if (PlainTextComponentSerializer.plainText().serialize(event.getView().title()).contains("Rezept für:")) {
-                    event.setCancelled(true);
-                }
-            }
+        // Outside of the running game nobody moves items; ingame only spectators are locked.
+        // Clicks inside plugin GUIs are handled (and cancelled) by the GuiListener.
+        if (gameStateEnum != GameStateEnum.INGAME || this.forceItemBattle.getTeamManager().isSpectator(player)) {
+            event.setCancelled(true);
         }
     }
 

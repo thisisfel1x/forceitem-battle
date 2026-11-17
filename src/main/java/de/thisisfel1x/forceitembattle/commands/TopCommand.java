@@ -29,7 +29,7 @@ public class TopCommand implements BasicCommand {
 
         GameManager gameManager = forceItemBattle.getGameManager();
         if (gameManager.getCurrentGameState().getGameStateEnum() != GameStateEnum.INGAME) {
-            player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Dieser Befehel kann nur während dem Spiel ausgeführt werden!", NamedTextColor.RED)));
+            player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Dieser Befehl kann nur während dem Spiel ausgeführt werden!", NamedTextColor.RED)));
             return;
         }
 

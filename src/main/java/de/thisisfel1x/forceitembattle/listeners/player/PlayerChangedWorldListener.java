@@ -25,7 +25,7 @@ public class PlayerChangedWorldListener implements Listener {
         Player player = event.getPlayer();
         GamePlayer gamePlayer = this.forceItemBattle.getTeamManager().getGamePlayer(player.getUniqueId());
 
-        if (gamePlayer.isSpectator()) return;
+        if (gamePlayer == null || gamePlayer.isSpectator()) return;
 
         // Prevent dismount of armorstand in nether/end portal
         gamePlayer.updateArmorstandItem();

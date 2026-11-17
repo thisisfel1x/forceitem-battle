@@ -1,5 +1,13 @@
 name: forceitem-battle
-version: '1.0-SNAPSHOT'
+version: '${version}'
 main: de.thisisfel1x.forceitembattle.ForceItemBattle
-api-version: '1.21'
+api-version: '${apiVersion}'
 authors: [ thisisfel1x ]
+
+permissions:
+  forceitembattle.start:
+    description: Allows starting the game with /start
+    default: op
+  forceitembattle.settings:
+    description: Allows changing the game settings in the lobby
+    default: op

@@ -22,7 +22,6 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.time.Duration;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -31,11 +30,17 @@ public class ResultsState extends GameState {
     private final ForceItemBattle forceItemBattle;
     private BukkitTask currentResultsTask;
 
-    private List<Location> lobbySpawns;
+    private List<Location> lobbySpawns = List.of();
     private int nextSpawnIndex = 0;
 
-    private List<ForceItemBattleTeam> allSortedTeams;
-    private List<ForceItemBattleTeam> topTeams;
+    /**
+     * All teams with members, best team first.
+     */
+    private List<ForceItemBattleTeam> ranking = List.of();
+    /**
+     * Teams that found at least one item in the order they are revealed: worst first, winner last.
+     */
+    private List<ForceItemBattleTeam> showcaseTeams = List.of();
     private final Audience audience = Bukkit.getServer();
 
     public ResultsState(GameManager gameManager) {
@@ -47,39 +52,39 @@ public class ResultsState extends GameState {
     public void onEnter() {
         this.forceItemBattle.getSettingsManager().removeAllGameSettings();
 
-        Bukkit.getOnlinePlayers().forEach(player -> player.getPassengers().forEach(passenger -> {
-            player.removePassenger(passenger);
-            passenger.remove();
-        }));
+        this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::removeArmorstand);
+        Bukkit.getOnlinePlayers().forEach(Player::closeInventory);
 
         setupAndTeleportPlayers();
 
         this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::freezePlayer);
         this.forceItemBattle.getTeamManager().getTeams().forEach(ForceItemBattleTeam::clearBossBar);
 
-        this.allSortedTeams = this.forceItemBattle.getTeamManager().getTeams().stream()
+        // Most items first; on a tie the team that reached its score earlier is ranked higher
+        this.ranking = this.forceItemBattle.getTeamManager().getTeams().stream()
                 .filter(team -> !team.getTeamMembers().isEmpty())
-                .sorted(Comparator.comparingInt(team -> ((ForceItemBattleTeam) team).getFoundItems().size()).reversed())
+                .sorted(Comparator.comparingInt((ForceItemBattleTeam team) -> team.getFoundItems().size()).reversed()
+                        .thenComparingLong(ForceItemBattleTeam::getLastFoundTimestamp))
                 .toList();
 
-        this.topTeams = allSortedTeams.stream()
+        this.showcaseTeams = this.ranking.stream()
                 .filter(team -> !team.getFoundItems().isEmpty())
-                //.limit(3)
-                .toList();
+                .toList()
+                .reversed();
 
         startIntroTask();
     }
 
     private void setupAndTeleportPlayers() {
-        Location worldSpawnPoint = Bukkit.getWorld("world").getSpawnLocation();
+        Location worldSpawnPoint = this.forceItemBattle.getMainWorld().getSpawnLocation();
         worldSpawnPoint.getChunk().load();
-        int maxPlayers = this.forceItemBattle.getTeamManager().getTeams().size() * 2;
+        int maxPlayers = this.forceItemBattle.getTeamManager().getMaxPlayers();
         double radius = 10;
         this.lobbySpawns = LocationUtil.calculateCircleSpawns(worldSpawnPoint, maxPlayers, radius);
         this.nextSpawnIndex = 0;
 
         this.forceItemBattle.getTeamManager().getGamePlayers().values()
-                .forEach(gamePlayer -> this.teleportPlayerToNextSpawn(gamePlayer.getPlayer()));
+                .forEach(gamePlayer -> gamePlayer.ifOnline(this::teleportPlayerToNextSpawn));
     }
 
     public void teleportPlayerToNextSpawn(Player player) {
@@ -89,21 +94,37 @@ public class ResultsState extends GameState {
         nextSpawnIndex = (nextSpawnIndex + 1) % lobbySpawns.size();
     }
 
+    private int getRank(ForceItemBattleTeam team) {
+        return this.ranking.indexOf(team) + 1;
+    }
+
     private void startIntroTask() {
         currentResultsTask = new ShowIntroTask().runTaskLater(forceItemBattle, 20L);
     }
 
-    private void startTeamShowcaseTask(int teamIndex) {
-        currentResultsTask = new TeamShowcaseTask(teamIndex).runTaskTimer(forceItemBattle, 0L, 10L);
+    /**
+     * Shows the team at the given showcase position or finishes with the final ranking
+     * if every team has been shown.
+     */
+    private void startTeamShowcaseOrFinish(int showcaseIndex) {
+        if (showcaseIndex < showcaseTeams.size()) {
+            currentResultsTask = new TeamShowcaseTask(showcaseIndex).runTaskTimer(forceItemBattle, 0L, 10L);
+        } else {
+            startFinalRankingTask();
+        }
     }
 
-    private void startTeamRevealTask(ForceItemBattleTeam team, int teamRank) {
-        currentResultsTask = new TeamRevealTask(team, teamRank).runTaskLater(forceItemBattle, 0L);
+    private void startTeamRevealTask(ForceItemBattleTeam team, int showcaseIndex) {
+        currentResultsTask = new TeamRevealTask(team, showcaseIndex).runTaskLater(forceItemBattle, 0L);
     }
 
     private void startFinalRankingTask() {
         sendFinalRankingToChat();
-        currentResultsTask = new ShutdownCountdownTask().runTaskTimer(forceItemBattle, 0L, 20L);
+
+        if (this.forceItemBattle.getConfig().getBoolean("results.shutdown-server", true)) {
+            int delay = Math.max(1, this.forceItemBattle.getConfig().getInt("results.shutdown-delay-seconds", 20));
+            currentResultsTask = new ShutdownCountdownTask(delay).runTaskTimer(forceItemBattle, 0L, 20L);
+        }
     }
 
     private class ShowIntroTask extends BukkitRunnable {
@@ -117,29 +138,29 @@ public class ResultsState extends GameState {
             currentResultsTask = new BukkitRunnable() {
                 @Override
                 public void run() {
-                    startTeamShowcaseTask(0);
+                    startTeamShowcaseOrFinish(0);
                 }
             }.runTaskLater(forceItemBattle, 100L);
         }
     }
 
     private class TeamShowcaseTask extends BukkitRunnable {
-        private final int teamIndex;
+        private final int showcaseIndex;
         private final ForceItemBattleTeam team;
         private final List<FoundItemData> foundItems;
         private int currentItemIndex = 0;
 
-        public TeamShowcaseTask(int teamIndex) {
-            this.teamIndex = teamIndex;
-            this.team = topTeams.get(teamIndex);
-            this.foundItems = team.getFoundItems();
+        public TeamShowcaseTask(int showcaseIndex) {
+            this.showcaseIndex = showcaseIndex;
+            this.team = showcaseTeams.get(showcaseIndex);
+            this.foundItems = List.copyOf(team.getFoundItems());
         }
 
         @Override
         public void run() {
             if (currentItemIndex >= foundItems.size()) {
                 this.cancel();
-                startTeamRevealTask(team, teamIndex);
+                startTeamRevealTask(team, showcaseIndex);
                 return;
             }
 
@@ -157,16 +178,16 @@ public class ResultsState extends GameState {
 
     private class TeamRevealTask extends BukkitRunnable {
         private final ForceItemBattleTeam team;
-        private final int teamRank;
+        private final int showcaseIndex;
 
-        public TeamRevealTask(ForceItemBattleTeam team, int teamRank) {
+        public TeamRevealTask(ForceItemBattleTeam team, int showcaseIndex) {
             this.team = team;
-            this.teamRank = teamRank;
+            this.showcaseIndex = showcaseIndex;
         }
 
         @Override
         public void run() {
-            Component title = Component.text("#" + (topTeams.size() - teamRank) + " " + team.getTeamName(), team.getTeamColor(), TextDecoration.BOLD);
+            Component title = Component.text("#" + getRank(team) + " " + team.getTeamName(), team.getTeamColor(), TextDecoration.BOLD);
             Component subtitle = Component.text(team.getFoundItems().size() + " Items gefunden!", NamedTextColor.WHITE);
             Title.Times times = Title.Times.times(Duration.ofSeconds(1), Duration.ofSeconds(3), Duration.ofSeconds(1));
 
@@ -176,12 +197,7 @@ public class ResultsState extends GameState {
             currentResultsTask = new BukkitRunnable() {
                 @Override
                 public void run() {
-                    int nextTeamIndex = teamRank + 1;
-                    if (nextTeamIndex < topTeams.size()) {
-                        startTeamShowcaseTask(nextTeamIndex);
-                    } else {
-                        startFinalRankingTask();
-                    }
+                    startTeamShowcaseOrFinish(showcaseIndex + 1);
                 }
             }.runTaskLater(forceItemBattle, 100L);
         }
@@ -192,14 +208,12 @@ public class ResultsState extends GameState {
         audience.sendMessage(Component.text("▬▬▬▬▬ Endergebnis ▬▬▬▬▬", NamedTextColor.GOLD, TextDecoration.BOLD));
         audience.sendMessage(Component.text(""));
 
-        int rank = 1;
-        for (ForceItemBattleTeam team : allSortedTeams) {
-            Component rankComponent = Component.text("#" + rank + " ", NamedTextColor.GRAY);
+        for (ForceItemBattleTeam team : ranking) {
+            Component rankComponent = Component.text("#" + getRank(team) + " ", NamedTextColor.GRAY);
             Component teamComponent = Component.text(team.getTeamName(), team.getTeamColor());
             Component itemsComponent = Component.text(" - " + team.getFoundItems().size() + " Items", NamedTextColor.YELLOW);
 
             audience.sendMessage(rankComponent.append(teamComponent).append(itemsComponent));
-            rank++;
         }
 
         audience.sendMessage(Component.text(""));
@@ -207,8 +221,12 @@ public class ResultsState extends GameState {
     }
 
     private class ShutdownCountdownTask extends BukkitRunnable {
-        private int secondsLeft = 20;
-        private final Set<Integer> announcements = Set.of(20, 15, 10, 5, 4, 3, 2, 1);
+        private int secondsLeft;
+        private final Set<Integer> announcements = Set.of(60, 30, 20, 15, 10, 5, 4, 3, 2, 1);
+
+        public ShutdownCountdownTask(int secondsLeft) {
+            this.secondsLeft = secondsLeft;
+        }
 
         @Override
         public void run() {
@@ -222,8 +240,8 @@ public class ResultsState extends GameState {
             }
 
             if (secondsLeft <= 0) {
-                Bukkit.shutdown();
                 this.cancel();
+                Bukkit.shutdown();
                 return;
             }
             secondsLeft--;
