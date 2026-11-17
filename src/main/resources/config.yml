@@ -1,15 +1,17 @@
 # ForceItemBattle configuration
 
 resource-pack:
-  # Send the custom resource pack (item icons, scoreboard title glyphs) on join
+  # Send the custom resource pack (item icons, scoreboard title glyphs) on join.
+  # Without the pack items are shown by name only.
   enabled: true
-  # Direct download link. Google Drive has download quotas - for bigger events prefer
-  # a real file host (e.g. a GitHub release asset).
-  url: "https://drive.google.com/uc?export=download&id=1zb09v_T6YS87vgplD3uMa2UtvD1_jieC"
-  # SHA-1 of the pack zip (40 hex characters). Strongly recommended: without it clients
-  # cannot cache the pack and will not notice pack updates reliably.
+  # Empty (recommended): the pack of the GitHub release of exactly this plugin version
+  #   (forceitem-battle-pack-<version>.zip) is used. URL and SHA-1 are built into the plugin.
+  # Own host: a direct download link to the pack zip, e.g. for a modified pack or a dev build.
+  url: ""
+  # SHA-1 of the pack zip (40 hex characters). Only needed together with an own url -
+  # without it clients cannot cache the pack and will not notice pack updates reliably.
   sha1: ""
-  # Kick players that decline the pack
+  # Players that decline the pack are disconnected
   required: true
 
 teams:

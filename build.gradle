@@ -7,9 +7,8 @@ plugins {
 }
 
 group = 'de.thisisfel1x'
-// 'version' is defined in gradle.properties (single source of truth for jar, plugin.yml and releases)
+// 'version' and 'paperVersion' are defined in gradle.properties (single source of truth for jar, plugin.yml and releases)
 
-def paperVersion = '26.3'
 def targetJavaVersion = 25
 def scoreboardLibraryVersion = '2.8.3'
 
@@ -62,6 +61,8 @@ shadowJar {
 assemble {
     dependsOn shadowJar
 }
+
+apply from: 'gradle/resourcepack.gradle'
 
 tasks {
     runServer {

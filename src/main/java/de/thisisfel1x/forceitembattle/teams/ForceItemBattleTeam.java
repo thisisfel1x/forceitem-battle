@@ -19,7 +19,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 
 public class ForceItemBattleTeam {
@@ -154,11 +153,9 @@ public class ForceItemBattleTeam {
 
     public void updateBossBar() {
         ItemStack currentItem = this.getCurrentItem();
-        Component icon = ForceItemBattle.getInstance().getIconManager()
-                .getIconSafe("fib_" + currentItem.getType().name().toLowerCase(Locale.ROOT));
+        Component icon = ForceItemBattle.getInstance().getIconManager().getIconWithSpacing(currentItem.getType());
 
-        this.bossBar.name(icon.append(Component.text(" "))
-                .append(Component.translatable(currentItem.translationKey())));
+        this.bossBar.name(icon.append(Component.translatable(currentItem.translationKey())));
     }
 
     public void clearBossBar() {

@@ -7,7 +7,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.GameMode;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -17,31 +16,8 @@ public class JoinListener implements Listener {
 
     private final ForceItemBattle forceItemBattle;
 
-    private final boolean resourcePackEnabled;
-    private final String resourcePackUrl;
-    private final String resourcePackHash;
-    private final boolean resourcePackRequired;
-
     public JoinListener(ForceItemBattle forceItemBattle) {
         this.forceItemBattle = forceItemBattle;
-
-        FileConfiguration config = forceItemBattle.getConfig();
-        this.resourcePackUrl = config.getString("resource-pack.url", "").trim();
-        this.resourcePackEnabled = config.getBoolean("resource-pack.enabled", true) && !this.resourcePackUrl.isEmpty();
-        this.resourcePackRequired = config.getBoolean("resource-pack.required", true);
-
-        String configuredHash = config.getString("resource-pack.sha1", "").trim();
-        if (configuredHash.isEmpty() || configuredHash.matches("[0-9a-fA-F]{40}")) {
-            this.resourcePackHash = configuredHash;
-        } else {
-            this.resourcePackHash = "";
-            forceItemBattle.getLogger().warning("resource-pack.sha1 ist kein gültiger SHA-1 Hash (40 Hex-Zeichen) und wird ignoriert.");
-        }
-
-        if (this.resourcePackEnabled && this.resourcePackHash.isEmpty()) {
-            forceItemBattle.getLogger().warning("resource-pack.sha1 ist nicht gesetzt: Clients können das Pack nicht cachen "
-                    + "und laden es bei jedem Join neu.");
-        }
     }
 
     @EventHandler
@@ -53,10 +29,7 @@ public class JoinListener implements Listener {
         event.joinMessage(this.forceItemBattle.getPrefix()
                 .append(Component.text(player.getName() + " hat das Spiel betreten", NamedTextColor.GRAY)));
 
-        if (this.resourcePackEnabled) {
-            player.setResourcePack(this.resourcePackUrl, this.resourcePackHash, this.resourcePackRequired,
-                    Component.text("Dieses Pack wird benötigt!"));
-        }
+        this.forceItemBattle.getResourcePackService().sendTo(player);
 
         // Register the sidebar/team view first, the code below may already change scoreboard teams
         this.forceItemBattle.getForceItemBattleScoreboardManager().handlePlayerJoin(player);

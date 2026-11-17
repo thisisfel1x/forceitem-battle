@@ -38,9 +38,11 @@ jobs:
           chmod +x gradlew
           ./gradlew build
 
-      - name: Upload plugin jar
+      - name: Upload plugin jar and resource pack
         uses: actions/upload-artifact@v4
         with:
           name: forceitem-battle
-          path: build/libs/*.jar
+          path: |
+            build/libs/*.jar
+            build/libs/*.zip
           if-no-files-found: error

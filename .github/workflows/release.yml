@@ -1,6 +1,8 @@
 name: Release
 
 # Publishes a release to GitHub and Modrinth when a version tag is pushed.
+# The GitHub release contains the plugin jar and the resource pack zip - the plugin downloads the pack
+# from exactly this release by default (URL and SHA-1 are baked into the jar at build time).
 #
 #   1. Set the new version in gradle.properties (e.g. version=1.1.0) and merge it to master
 #   2. git tag v1.1.0 && git push origin v1.1.0
@@ -15,7 +17,6 @@ permissions:
   contents: write
 
 env:
-  MINECRAFT_VERSION: '26.3'
   MODRINTH_PROJECT: 'awKBElnR'
 
 jobs:
@@ -38,6 +39,7 @@ jobs:
           fi
 
           echo "version=$PROJECT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "minecraft=$(grep -E '^paperVersion=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
           if [[ "$PROJECT_VERSION" == *-* ]]; then
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
             echo "channel=beta" >> "$GITHUB_OUTPUT"
@@ -60,6 +62,13 @@ jobs:
           chmod +x gradlew
           ./gradlew build
 
+      - name: Check item icons
+        run: |
+          ICON_VERSION="$(grep -oE '"minecraftVersion": *"[^"]+"' resourcepack/icons.json 2>/dev/null | cut -d'"' -f4)"
+          if [ "$ICON_VERSION" != "${{ steps.version.outputs.minecraft }}" ]; then
+            echo "::warning::Item icons were generated for Minecraft '${ICON_VERSION:-none}', the plugin targets ${{ steps.version.outputs.minecraft }}. Run the 'Generate item icons' workflow."
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -67,7 +76,9 @@ jobs:
           prerelease: ${{ steps.version.outputs.prerelease }}
           generate_release_notes: true
           fail_on_unmatched_files: true
-          files: build/libs/forceitem-battle-${{ steps.version.outputs.version }}.jar
+          files: |
+            build/libs/forceitem-battle-${{ steps.version.outputs.version }}.jar
+            build/libs/forceitem-battle-pack-${{ steps.version.outputs.version }}.zip
 
       - name: Upload to Modrinth
         uses: cloudnode-pro/modrinth-publish@v2
@@ -81,5 +92,5 @@ jobs:
           loaders: |-
             paper
           game-versions: |-
-            ${{ env.MINECRAFT_VERSION }}
+            ${{ steps.version.outputs.minecraft }}
           files: build/libs/forceitem-battle-${{ steps.version.outputs.version }}.jar

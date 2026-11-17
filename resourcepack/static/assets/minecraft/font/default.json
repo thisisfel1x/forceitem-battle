@@ -1,0 +1,64 @@
+{
+  "providers": [
+    {
+      "type": "space",
+      "advances": {
+        "\ue64b": -1
+      }
+    },
+    {
+      "file": "fib/title_1.png",
+      "chars": [
+        "\ue64c"
+      ],
+      "ascent": 20,
+      "height": 25,
+      "type": "bitmap"
+    },
+    {
+      "file": "fib/title_2.png",
+      "chars": [
+        "\ue64d"
+      ],
+      "ascent": 20,
+      "height": 25,
+      "type": "bitmap"
+    },
+    {
+      "file": "fib/title_3.png",
+      "chars": [
+        "\ue64e"
+      ],
+      "ascent": 20,
+      "height": 25,
+      "type": "bitmap"
+    },
+    {
+      "file": "fib/title_4.png",
+      "chars": [
+        "\ue650"
+      ],
+      "ascent": 20,
+      "height": 25,
+      "type": "bitmap"
+    },
+    {
+      "file": "fib/title_5.png",
+      "chars": [
+        "\ue651"
+      ],
+      "ascent": 20,
+      "height": 25,
+      "type": "bitmap"
+    },
+    {
+      "file": "fib/person.png",
+      "chars": [
+        "\ue652"
+      ],
+      "ascent": 8,
+      "height": 9,
+      "type": "bitmap"
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
+import javax.imageio.ImageIO
+import java.awt.image.BufferedImage
+import java.nio.file.Files
+import java.security.MessageDigest
+
+/*
+ * Builds the resource pack from resourcepack/ and bakes its SHA-1 and default URL into the plugin.
+ *
+ *   resourcepack/static/      hand made assets (scoreboard title glyphs, win model, ...) - copied as is
+ *   resourcepack/icons/       <item id>.png rendered by tools/icon-exporter (do not edit by hand)
+ *   resourcepack/icons.json   manifest of the export (Minecraft version, pack format, icon size)
+ *
+ * Output: build/libs/forceitem-battle-pack-<version>.zip - attached to every GitHub release.
+ */
+
+def packSourceDir = layout.projectDirectory.dir('resourcepack').asFile
+def generatedPackDir = layout.buildDirectory.dir('resourcepack/pack')
+def generatedInfoDir = layout.buildDirectory.dir('generated/resourcepack-info')
+def packFileName = "forceitem-battle-pack-${version}.zip"
+
+def iconSize = (findProperty('resourcePackIconSize') ?: '32') as int
+def fallbackPackFormat = (findProperty('resourcePackFormat') ?: '97') as int
+def githubRepository = findProperty('githubRepository') ?: ''
+def defaultPackUrl = githubRepository ? "https://github.com/${githubRepository}/releases/download/v${version}/${packFileName}" : ''
+def pluginMinecraftVersion = paperVersion
+
+def generateResourcePack = tasks.register('generateResourcePack') {
+    group = 'resource pack'
+    description = 'Assembles the resource pack directory from resourcepack/ (static assets + downscaled item icons).'
+
+    inputs.dir(packSourceDir)
+    inputs.property('iconSize', iconSize)
+    inputs.property('fallbackPackFormat', fallbackPackFormat)
+    inputs.property('version', version)
+    outputs.dir(generatedPackDir)
+
+    doLast {
+        File outputDir = generatedPackDir.get().asFile
+        outputDir.deleteDir()
+        outputDir.mkdirs()
+
+        // Static assets
+        File staticDir = new File(packSourceDir, 'static')
+        if (staticDir.isDirectory()) {
+            staticDir.eachFileRecurse { File file ->
+                if (!file.isFile()) return
+                File target = new File(outputDir, staticDir.toPath().relativize(file.toPath()).toString())
+                target.parentFile.mkdirs()
+                Files.copy(file.toPath(), target.toPath())
+            }
+        }
+
+        // Manifest of the icon export
+        File manifestFile = new File(packSourceDir, 'icons.json')
+        def manifest = manifestFile.isFile() ? new JsonSlurper().parse(manifestFile) : null
+        int packFormat = manifest?.resourcePackFormat ?: fallbackPackFormat
+
+        if (manifest == null) {
+            logger.warn("resourcepack/icons.json fehlt - das Pack enthält keine Item-Icons. "
+                    + "Icons mit dem Workflow 'Generate item icons' oder ./gradlew -p tools/icon-exporter runClientGameTest erzeugen.")
+        } else if (manifest.minecraftVersion != pluginMinecraftVersion) {
+            logger.warn("Die Item-Icons wurden für Minecraft ${manifest.minecraftVersion} erzeugt, das Plugin baut gegen "
+                    + "${pluginMinecraftVersion}. Neue Items haben kein Icon - bitte die Icons neu erzeugen.")
+        }
+
+        // Item icons: gui atlas sprites fib:icon/<item id>
+        File iconDir = new File(packSourceDir, 'icons')
+        File spriteDir = new File(outputDir, 'assets/fib/textures/gui/sprites/icon')
+        spriteDir.mkdirs()
+        List<String> iconIds = []
+
+        (iconDir.listFiles({ File file -> file.name.endsWith('.png') } as FileFilter) ?: new File[0])
+                .sort { it.name }
+                .each { File iconFile ->
+                    BufferedImage source = ImageIO.read(iconFile)
+                    ImageIO.write(downscaleIcon(source, iconSize), 'png', new File(spriteDir, iconFile.name))
+                    iconIds << iconFile.name.replace('.png', '')
+                }
+
+        def mcmeta = [pack: [
+                description: "ForceItemBattle ${version}",
+                min_format : packFormat,
+                max_format : packFormat
+        ]]
+        new File(outputDir, 'pack.mcmeta').setText(JsonOutput.prettyPrint(JsonOutput.toJson(mcmeta)) + '\n', 'UTF-8')
+
+        // Read by generateResourcePackInfo
+        new File(outputDir.parentFile, 'icons.txt').setText(iconIds.join('\n') + '\n', 'UTF-8')
+
+        logger.lifecycle("Resource pack: ${iconIds.size()} item icons (${iconSize}px), pack format ${packFormat}")
+    }
+}
+
+def buildResourcePack = tasks.register('buildResourcePack', Zip) {
+    group = 'resource pack'
+    description = 'Zips the resource pack to build/libs/forceitem-battle-pack-<version>.zip.'
+
+    from(generateResourcePack)
+    archiveFileName = packFileName
+    destinationDirectory = layout.buildDirectory.dir('libs')
+
+    // Same content -> same bytes -> same SHA-1, no matter where or when it is built
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+def generateResourcePackInfo = tasks.register('generateResourcePackInfo') {
+    group = 'resource pack'
+    description = 'Writes SHA-1, default URL and icon list of the resource pack into the plugin resources.'
+
+    inputs.files(buildResourcePack)
+    inputs.property('defaultPackUrl', defaultPackUrl)
+    outputs.dir(generatedInfoDir)
+
+    doLast {
+        File zipFile = buildResourcePack.get().archiveFile.get().asFile
+        File outputDir = new File(generatedInfoDir.get().asFile, 'resourcepack')
+        outputDir.deleteDir()
+        outputDir.mkdirs()
+
+        MessageDigest digest = MessageDigest.getInstance('SHA-1')
+        zipFile.withInputStream { stream ->
+            byte[] buffer = new byte[8192]
+            int read
+            while ((read = stream.read(buffer)) > 0) {
+                digest.update(buffer, 0, read)
+            }
+        }
+        String sha1 = digest.digest().encodeHex().toString()
+
+        new File(outputDir, 'pack.properties').setText(
+                "# Generated by gradle/resourcepack.gradle - do not edit\n"
+                        + "file=${packFileName}\n"
+                        + "url=${defaultPackUrl}\n"
+                        + "sha1=${sha1}\n", 'UTF-8')
+
+        File iconList = new File(generatedPackDir.get().asFile.parentFile, 'icons.txt')
+        Files.copy(iconList.toPath(), new File(outputDir, 'icons.txt').toPath())
+
+        logger.lifecycle("Resource pack SHA-1: ${sha1}")
+    }
+}
+
+processResources {
+    from(generateResourcePackInfo)
+}
+
+/**
+ * Box filter downscale with alpha weighting (transparent pixels do not darken the edges).
+ */
+static BufferedImage downscaleIcon(BufferedImage source, int targetSize) {
+    int factor = Math.max(1, source.width.intdiv(targetSize))
+    int size = source.width.intdiv(factor)
+    BufferedImage target = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
+
+    for (int y = 0; y < size; y++) {
+        for (int x = 0; x < size; x++) {
+            long alphaSum = 0, redSum = 0, greenSum = 0, blueSum = 0
+
+            for (int dy = 0; dy < factor; dy++) {
+                for (int dx = 0; dx < factor; dx++) {
+                    int pixel = source.getRGB(x * factor + dx, y * factor + dy)
+                    int alpha = (pixel >>> 24) & 0xFF
+                    alphaSum += alpha
+                    redSum += ((pixel >> 16) & 0xFF) * alpha
+                    greenSum += ((pixel >> 8) & 0xFF) * alpha
+                    blueSum += (pixel & 0xFF) * alpha
+                }
+            }
+
+            if (alphaSum == 0) {
+                target.setRGB(x, y, 0)
+                continue
+            }
+
+            int alpha = Math.round(alphaSum / (double) (factor * factor)) as int
+            int red = Math.round(redSum / (double) alphaSum) as int
+            int green = Math.round(greenSum / (double) alphaSum) as int
+            int blue = Math.round(blueSum / (double) alphaSum) as int
+            target.setRGB(x, y, (alpha << 24) | (red << 16) | (green << 8) | blue)
+        }
+    }
+    return target
+}

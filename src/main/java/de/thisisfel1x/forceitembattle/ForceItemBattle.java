@@ -30,6 +30,7 @@ import de.thisisfel1x.forceitembattle.teams.TeamManager;
 import de.thisisfel1x.forceitembattle.utils.ForceItemBattleScoreboardManager;
 import de.thisisfel1x.forceitembattle.utils.IconManager;
 import de.thisisfel1x.forceitembattle.utils.ItemRegistry;
+import de.thisisfel1x.forceitembattle.utils.ResourcePackService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -58,6 +59,7 @@ public final class ForceItemBattle extends JavaPlugin {
     private TeamManager teamManager;
     private ItemTracker itemTracker;
 
+    private ResourcePackService resourcePackService;
     private IconManager iconManager;
 
     private ScoreboardLibrary scoreboardLibrary;
@@ -77,8 +79,9 @@ public final class ForceItemBattle extends JavaPlugin {
 
         this.saveDefaultConfig();
 
+        this.resourcePackService = new ResourcePackService(this);
         this.iconManager = new IconManager(this);
-        this.iconManager.loadIcons();
+        this.iconManager.loadIcons(this.resourcePackService.isEnabled());
 
         ItemRegistry.initialize(this.getConfig().getStringList("items.additional-banned"), this.getLogger());
         this.warnAboutMissingIcons();
@@ -122,21 +125,21 @@ public final class ForceItemBattle extends JavaPlugin {
     }
 
     /**
-     * The icon mapping belongs to a specific resource pack version. Items that were added to the
-     * game afterwards have no glyph and are shown by name only.
+     * The icons are rendered for a specific Minecraft version (tools/icon-exporter). Items that were
+     * added to the game afterwards have no icon and are shown by name only.
      */
     private void warnAboutMissingIcons() {
         if (!this.iconManager.isLoaded()) return;
 
         List<String> missing = ItemRegistry.getFindableMaterials().stream()
+                .filter(material -> !this.iconManager.hasIcon(material))
                 .map(material -> material.name().toLowerCase(Locale.ROOT))
-                .filter(name -> !this.iconManager.hasIcon("fib_" + name))
                 .sorted()
                 .toList();
 
         if (!missing.isEmpty()) {
-            this.getLogger().warning(missing.size() + " Items im Pool haben kein Icon im Resource-Pack-Mapping "
-                    + "(werden nur mit Namen angezeigt): " + String.join(", ", missing));
+            this.getLogger().warning(missing.size() + " Items im Pool haben kein Icon im Resource-Pack "
+                    + "(werden nur mit Namen angezeigt, Icons neu erzeugen): " + String.join(", ", missing));
         }
     }
 
@@ -206,6 +209,10 @@ public final class ForceItemBattle extends JavaPlugin {
 
     public ItemTracker getItemTracker() {
         return itemTracker;
+    }
+
+    public ResourcePackService getResourcePackService() {
+        return resourcePackService;
     }
 
     public IconManager getIconManager() {
