@@ -11,8 +11,8 @@ name: Release
 #   - a merged pull request of the "New Minecraft version" workflow (branch minecraft/<version>): the tag
 #     v<version from gradle.properties> is created automatically
 #
-# Before publishing, build.yml verifies the commit (compatibility + smoke test for every supported version)
-# and the released files are exactly the files it built.
+# Before publishing, build.yml renders the item icons, builds and verifies the commit (compatibility + smoke test
+# for every supported version) - the released files are exactly the files it built.
 # Versions with a suffix (e.g. 1.2.0-beta.1) are published as pre-release / beta.
 on:
   push:
@@ -86,14 +86,6 @@ jobs:
             echo
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
-
-      - name: Check item icons
-        run: |
-          LATEST="$(grep -E '^supportedVersions=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]' | awk -F',' '{print $NF}')"
-          ICON_VERSION="$(grep -oE '"minecraftVersion": *"[^"]+"' resourcepack/icons.json 2>/dev/null | cut -d'"' -f4)"
-          if [ "$ICON_VERSION" != "$LATEST" ]; then
-            echo "::warning::Item icons were generated for Minecraft '${ICON_VERSION:-none}', the newest supported version is $LATEST. Run the 'Generate item icons' workflow."
-          fi
 
   verify:
     name: Verify

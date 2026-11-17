@@ -264,3 +264,9 @@ gradle-app.setting
 
 ### Python ###
 __pycache__/
+
+### Item icons ###
+# Rendered from the Minecraft client by tools/icon-exporter (in CI before every build) - generated and derived
+# from Mojang's textures, so they are not part of the repository
+resourcepack/icons/
+resourcepack/icons.json

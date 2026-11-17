@@ -141,9 +141,12 @@ to maintain, the item id is the sprite name.
 ```
 resourcepack/
 ├── static/       hand made assets (scoreboard title glyphs, win model, ...)
-├── icons/        <item id>.png, 64x64 - generated, do not edit by hand
-└── icons.json    manifest of the export (Minecraft version, pack format)
+├── icons/        <item id>.png, 64x64 - generated, not in the repository
+└── icons.json    manifest of the export (Minecraft version, pack format) - generated, not in the repository
 ```
+
+The icons are renders of Mojang's textures, so they are not committed: CI renders them before every build and they
+only end up in the resource pack of the build (and of the release).
 
 `./gradlew build` downscales the icons (`resourcePackIconSize` in `gradle.properties`, default 32 px), zips the pack
 reproducibly and bakes its SHA-1 and the release download URL into the plugin.
@@ -154,14 +157,13 @@ The icons are rendered by the real game client, so 3D items (beds, chests, stair
 the inventory. `tools/icon-exporter` is a small Fabric client gametest; Gradle downloads Minecraft itself, no
 installation or account is needed. Exports are deterministic (animated textures are frozen on their first frame).
 
-For new Minecraft versions the **New Minecraft version** workflow does this automatically. Manually:
+The build workflow renders them headless before every build, the artifact `icon-preview` contains boss bar screenshots
+of the result. The Minecraft version of the client is set in `tools/icon-exporter/gradle.properties`
+(`minecraft_version`, `loader_version`, `fabric_api_version` - current values: <https://fabricmc.net/develop>); the
+**New Minecraft version** workflow updates it automatically.
 
-1.  Bump `minecraft_version`, `loader_version` and `fabric_api_version` in `tools/icon-exporter/gradle.properties`
-    (current values: <https://fabricmc.net/develop>).
-2.  Run the GitHub Actions workflow **Generate item icons**. It renders headless and opens a pull request with the icons.
-    The artifact `icon-preview` contains boss bar screenshots of the result.
-
-Locally (opens a game window for about a minute): `./gradlew -p tools/icon-exporter runClientGameTest`
+Locally (opens a game window for about a minute, needed for a local build with icons):
+`./gradlew -p tools/icon-exporter runClientGameTest`
 
 ## License
 

@@ -3,8 +3,9 @@ name: Build
 # Verifies every pull request and every commit on master for all supported Minecraft versions
 # (gradle.properties -> supportedVersions):
 #
-#   build          the plugin jar (one jar for all versions, compiled against the oldest API) and the
-#                  resource pack - uploaded as artifact "forceitem-battle"
+#   build          renders the item icons with the Minecraft client (tools/icon-exporter - they are not part of
+#                  the repository), builds the plugin jar (one jar for all versions, compiled against the oldest
+#                  API) and the resource pack - uploaded as artifact "forceitem-battle" (icon screenshots: "icon-preview")
 #   compatibility  compiles the plugin against the API of every supported version
 #   smoke-test     starts a real Paper server of every supported version with the jar and checks the log
 #                  (tools/smoke-test/smoke_test.py - accepts the Minecraft EULA: https://aka.ms/MinecraftEULA)
@@ -53,7 +54,8 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository
@@ -69,6 +71,10 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      # The icons go into the resource pack - rendered fresh for every build instead of being committed
+      - name: Render item icons
+        uses: ./.github/actions/render-icons
 
       - name: Build with Gradle
         run: |

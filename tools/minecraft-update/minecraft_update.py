@@ -212,8 +212,8 @@ def apply(new_versions, summary_file):
         if fabric["loom"] and version_key(fabric["loom"]) > version_key(read_property(EXPORTER_PROPERTIES, "loom_version")):
             write_property(EXPORTER_PROPERTIES, "loom_version", fabric["loom"])
     else:
-        warnings.append(f"Fabric does not support Minecraft {latest} yet - the item icons were not regenerated. "
-                        f"Run the workflow again later or update tools/icon-exporter manually.")
+        warnings.append(f"Fabric does not support Minecraft {latest} yet - the item icons are still rendered with "
+                        f"the previous version (new items have no icon). Update tools/icon-exporter later.")
 
     text = [
         f"Adds support for Minecraft {', '.join(new_versions)}.",
