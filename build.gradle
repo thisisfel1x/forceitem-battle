@@ -7,9 +7,15 @@ plugins {
 }
 
 group = 'de.thisisfel1x'
-// 'version' and 'paperVersion' are defined in gradle.properties (single source of truth for jar, plugin.yml and releases)
+// 'version' and 'supportedVersions' are defined in gradle.properties (single source of truth for jar, plugin.yml and releases)
 
-def targetJavaVersion = 25
+apply from: 'gradle/minecraft-versions.gradle'
+
+// Bytecode level of the oldest supported version - the jar has to load on its Java version.
+// A compatibility build against a newer API (-PcompileVersion) needs that API's level instead.
+def targetJavaVersion = javaVersionFor(minecraftVersions.compile)
+// JDK used for compiling and the local test server (runs every supported version)
+def toolchainJavaVersion = 25
 def scoreboardLibraryVersion = '2.8.3'
 
 repositories {
@@ -22,7 +28,7 @@ repositories {
 
 dependencies {
     // Paper already ships Adventure (incl. MiniMessage), Gson and SnakeYAML - nothing of that is shaded.
-    compileOnly("io.papermc.paper:paper-api:${paperVersion}.build.+")
+    compileOnly(paperApiDependency(minecraftVersions.compile))
 
     // The only shaded (and relocated) dependency
     implementation("net.megavex:scoreboard-library-api:${scoreboardLibraryVersion}")
@@ -30,7 +36,7 @@ dependencies {
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    toolchain.languageVersion = JavaLanguageVersion.of(toolchainJavaVersion)
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -40,7 +46,8 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 processResources {
-    def props = [version: version, apiVersion: paperVersion]
+    // Paper loads plugins with an older api-version, but refuses a newer one -> the oldest supported version
+    def props = [version: version, apiVersion: minecraftVersions.minimum]
     inputs.properties props
     filteringCharset = 'UTF-8'
     filesMatching('plugin.yml') {
@@ -66,7 +73,7 @@ apply from: 'gradle/resourcepack.gradle'
 
 tasks {
     runServer {
-        minecraftVersion(paperVersion)
+        minecraftVersion(minecraftVersions.test)
     }
 }
 
@@ -74,7 +81,7 @@ tasks {
 tasks.withType(AbstractRun).configureEach {
     javaLauncher = javaToolchains.launcherFor {
         vendor = JvmVendorSpec.JETBRAINS
-        languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+        languageVersion = JavaLanguageVersion.of(toolchainJavaVersion)
     }
     jvmArgs('-XX:+AllowEnhancedClassRedefinition')
 }

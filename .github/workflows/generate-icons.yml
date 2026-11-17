@@ -4,16 +4,23 @@ name: Generate item icons
 # game client - headless on a virtual display (xvfb) with Mesa software rendering, no GPU and no
 # Minecraft account needed - and opens a pull request with the new icons.
 #
-# Runs automatically when the exporter changes (e.g. a version bump in tools/icon-exporter/gradle.properties)
-# and can be started manually (Actions -> Generate item icons -> Run workflow; manual runs need this file
-# on the default branch). The artifact "icon-preview" contains screenshots of the icons in the boss bar.
+# New Minecraft versions are handled by new-minecraft-version.yml (which renders the icons itself).
+# This workflow is for changes to the exporter: it runs automatically when the exporter changes and can be
+# started manually (Actions -> Generate item icons -> Run workflow; manual runs need this file on the
+# default branch). The artifact "icon-preview" contains screenshots of the icons in the boss bar.
 #
 # Requires: Settings -> Actions -> General -> "Allow GitHub Actions to create and approve pull requests"
 on:
   workflow_dispatch:
   push:
+    branches-ignore:
+      # Branches of the automation, they render the icons themselves
+      - 'minecraft/**'
+      - 'icons/**'
     paths:
       - 'tools/icon-exporter/**'
+      - '.github/actions/render-icons/**'
+      - '.github/actions/virtual-display/**'
       - '.github/workflows/generate-icons.yml'
 
 permissions:
@@ -38,32 +45,12 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Install virtual display and software rendering
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libvulkan1 mesa-vulkan-drivers
-
       - name: Read Minecraft version
         id: minecraft
         run: echo "version=$(grep -E '^minecraft_version=' tools/icon-exporter/gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
 
       - name: Render item icons
-        env:
-          LIBGL_ALWAYS_SOFTWARE: '1'
-        run: |
-          chmod +x gradlew
-          xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" \
-            ./gradlew -p tools/icon-exporter runClientGameTest --no-daemon
-
-      - name: Upload preview and logs
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: icon-preview
-          path: |
-            tools/icon-exporter/build/icon-preview
-            tools/icon-exporter/build/run/clientGameTest/logs
-          if-no-files-found: warn
+        uses: ./.github/actions/render-icons
 
       - name: Open pull request
         uses: peter-evans/create-pull-request@v7

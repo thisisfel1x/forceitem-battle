@@ -13,6 +13,10 @@ import java.security.MessageDigest
  *   resourcepack/icons/       <item id>.png rendered by tools/icon-exporter (do not edit by hand)
  *   resourcepack/icons.json   manifest of the export (Minecraft version, pack format, icon size)
  *
+ * One pack serves all supported versions: pack.mcmeta declares the format range from gradle.properties
+ * (resourcePackMinFormat..resourcePackMaxFormat). Items are never removed from the game, so the icons of
+ * the newest version cover the older ones as well.
+ *
  * Output: build/libs/forceitem-battle-pack-<version>.zip - attached to every GitHub release.
  */
 
@@ -22,10 +26,14 @@ def generatedInfoDir = layout.buildDirectory.dir('generated/resourcepack-info')
 def packFileName = "forceitem-battle-pack-${version}.zip"
 
 def iconSize = (findProperty('resourcePackIconSize') ?: '32') as int
-def fallbackPackFormat = (findProperty('resourcePackFormat') ?: '97') as int
+def minPackFormat = (findProperty('resourcePackMinFormat') ?: '0') as int
+def maxPackFormat = (findProperty('resourcePackMaxFormat') ?: '0') as int
+if (minPackFormat <= 0 || maxPackFormat < minPackFormat) {
+    throw new GradleException("gradle.properties: invalid resource pack format range ${minPackFormat}..${maxPackFormat}")
+}
 def githubRepository = findProperty('githubRepository') ?: ''
 def defaultPackUrl = githubRepository ? "https://github.com/${githubRepository}/releases/download/v${version}/${packFileName}" : ''
-def pluginMinecraftVersion = paperVersion
+def latestMinecraftVersion = minecraftVersions.latest
 
 def generateResourcePack = tasks.register('generateResourcePack') {
     group = 'resource pack'
@@ -33,7 +41,9 @@ def generateResourcePack = tasks.register('generateResourcePack') {
 
     inputs.dir(packSourceDir)
     inputs.property('iconSize', iconSize)
-    inputs.property('fallbackPackFormat', fallbackPackFormat)
+    inputs.property('minPackFormat', minPackFormat)
+    inputs.property('maxPackFormat', maxPackFormat)
+    inputs.property('latestMinecraftVersion', latestMinecraftVersion)
     inputs.property('version', version)
     outputs.dir(generatedPackDir)
 
@@ -56,14 +66,13 @@ def generateResourcePack = tasks.register('generateResourcePack') {
         // Manifest of the icon export
         File manifestFile = new File(packSourceDir, 'icons.json')
         def manifest = manifestFile.isFile() ? new JsonSlurper().parse(manifestFile) : null
-        int packFormat = manifest?.resourcePackFormat ?: fallbackPackFormat
 
         if (manifest == null) {
             logger.warn("resourcepack/icons.json fehlt - das Pack enthält keine Item-Icons. "
                     + "Icons mit dem Workflow 'Generate item icons' oder ./gradlew -p tools/icon-exporter runClientGameTest erzeugen.")
-        } else if (manifest.minecraftVersion != pluginMinecraftVersion) {
-            logger.warn("Die Item-Icons wurden für Minecraft ${manifest.minecraftVersion} erzeugt, das Plugin baut gegen "
-                    + "${pluginMinecraftVersion}. Neue Items haben kein Icon - bitte die Icons neu erzeugen.")
+        } else if (manifest.minecraftVersion != latestMinecraftVersion) {
+            logger.warn("Die Item-Icons wurden für Minecraft ${manifest.minecraftVersion} erzeugt, die neueste unterstützte "
+                    + "Version ist ${latestMinecraftVersion}. Neue Items haben kein Icon - bitte die Icons neu erzeugen.")
         }
 
         // Item icons: gui atlas sprites fib:icon/<item id>
@@ -82,15 +91,15 @@ def generateResourcePack = tasks.register('generateResourcePack') {
 
         def mcmeta = [pack: [
                 description: "ForceItemBattle ${version}",
-                min_format : packFormat,
-                max_format : packFormat
+                min_format : minPackFormat,
+                max_format : maxPackFormat
         ]]
         new File(outputDir, 'pack.mcmeta').setText(JsonOutput.prettyPrint(JsonOutput.toJson(mcmeta)) + '\n', 'UTF-8')
 
         // Read by generateResourcePackInfo
         new File(outputDir.parentFile, 'icons.txt').setText(iconIds.join('\n') + '\n', 'UTF-8')
 
-        logger.lifecycle("Resource pack: ${iconIds.size()} item icons (${iconSize}px), pack format ${packFormat}")
+        logger.lifecycle("Resource pack: ${iconIds.size()} item icons (${iconSize}px), pack formats ${minPackFormat}-${maxPackFormat}")
     }
 }
 

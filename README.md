@@ -15,8 +15,8 @@ The game principle is simple: Players are divided into teams and are tasked with
 
 ### Requirements
 
-* [Paper](https://papermc.io/) **26.3**
-* Java **25**
+* [Paper](https://papermc.io/) **1.21.11, 26.1.1, 26.1.2, 26.2 or 26.3** - one jar for all of them
+* Java **21** (1.21.11) or **25** (26.x) - whatever your Paper version needs
 
 -----
 
@@ -56,6 +56,47 @@ If you want to compile the project yourself, follow these steps.
 4.  The plugin jar (including its relocated dependencies) is located at `build/libs/forceitem-battle-<version>.jar`,
     the resource pack at `build/libs/forceitem-battle-pack-<version>.zip`.
 
+Useful while developing:
+
+| Command                                                  | Description                                               |
+|:---------------------------------------------------------|:----------------------------------------------------------|
+| `./gradlew runServer -PtestVersion=26.1.2`               | Local test server of any supported version (default: newest) |
+| `./gradlew compileJava -PcompileVersion=26.2`            | Compile against the API of another supported version      |
+| `python3 tools/smoke-test/smoke_test.py --minecraft 1.21.11 --plugin build/libs/forceitem-battle-1.1.0.jar` | Start a Paper server with the jar and check the log |
+
+The script accepts the [Minecraft EULA](https://aka.ms/MinecraftEULA) for its test servers.
+
+-----
+
+## Supported Minecraft Versions
+
+All versions are listed in `gradle.properties`:
+
+```properties
+supportedVersions=1.21.11,26.1.1,26.1.2,26.2,26.3
+resourcePackMinFormat=75
+resourcePackMaxFormat=97
+```
+
+* The jar is compiled against the **oldest** version (its API, `api-version` and Java bytecode level) - Paper loads
+  plugins with an older `api-version`, so the same jar runs on every newer version.
+* The item pool is read from the running server, every version gets exactly its items.
+* One resource pack serves all versions (format range in `pack.mcmeta`). Items are never removed from the game, so the
+  icons of the newest version cover the older ones.
+* CI compiles against the API of every version and starts a real Paper server of every version with the jar
+  (smoke test).
+
+### New Minecraft versions
+
+The workflow **New Minecraft version** checks daily for a new Minecraft version with a stable Paper build. If there is
+one, it adds the version to `supportedVersions`, raises `resourcePackMaxFormat`, bumps the patch version, renders the
+icons with the new client (as soon as Fabric supports it) and opens a pull request `Support Minecraft <version>`.
+The same run verifies the branch (compile, smoke test). **Merging the pull request publishes the
+release to GitHub and Modrinth.** It can also be started manually with explicit versions.
+
+Dropping an old version: remove it from `supportedVersions` and set `resourcePackMinFormat` to the format of the new
+oldest version (`pack_version.resource_major` in the `version.json` of its client jar).
+
 -----
 
 ## Configuration
@@ -93,11 +134,13 @@ resourcepack/
 `./gradlew build` downscales the icons (`resourcePackIconSize` in `gradle.properties`, default 32 px), zips the pack
 reproducibly and bakes its SHA-1 and the release download URL into the plugin.
 
-### Generating icons for a new Minecraft version
+### Generating icons
 
 The icons are rendered by the real game client, so 3D items (beds, chests, stairs, banners, ...) look exactly like in
 the inventory. `tools/icon-exporter` is a small Fabric client gametest; Gradle downloads Minecraft itself, no
-installation or account is needed.
+installation or account is needed. Exports are deterministic (animated textures are frozen on their first frame).
+
+For new Minecraft versions the **New Minecraft version** workflow does this automatically. Manually:
 
 1.  Bump `minecraft_version`, `loader_version` and `fabric_api_version` in `tools/icon-exporter/gradle.properties`
     (current values: <https://fabricmc.net/develop>).
@@ -124,19 +167,26 @@ The lobby settings item is only available with the permission `forceitembattle.s
 
 ## Releasing
 
-Every pull request and every commit on `master` is built by GitHub Actions, nothing is published automatically.
-To publish a release to GitHub and Modrinth:
+Every pull request and every commit on `master` is verified by GitHub Actions (build, compile against every supported
+version, smoke tests). A release is published to GitHub and Modrinth
 
-1.  Set the new version in `gradle.properties` (e.g. `version=1.1.0`) and merge it to `master`.
-2.  Push a matching tag:
+* automatically when a pull request of the **New Minecraft version** workflow is merged, or
+* manually:
+    1.  Set the new version in `gradle.properties` (e.g. `version=1.1.0`) and merge it to `master`.
+    2.  Push a matching tag:
 
-    ```sh
-    git tag v1.1.0
-    git push origin v1.1.0
-    ```
+        ```sh
+        git tag v1.1.0
+        git push origin v1.1.0
+        ```
 
-Tags with a suffix (e.g. `v1.2.0-beta.1`) are published as pre-release. The GitHub release contains the plugin jar and
-the resource pack, the plugin loads the pack from there by default.
+Before publishing, the release workflow verifies the commit again and publishes exactly the verified files. Versions
+with a suffix (e.g. `1.2.0-beta.1`) are published as pre-release. The GitHub release contains the plugin jar and the
+resource pack, the plugin loads the pack from there by default. Modrinth lists every version of `supportedVersions`.
+
+**Repository settings:** *Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests"*
+(icon and version pull requests) and the secret `MODRINTH_TOKEN`. Optional: a secret `AUTOMATION_TOKEN` (fine-grained
+token with contents + pull requests write) - pull requests opened by the workflows then also trigger the regular checks.
 
 -----
 

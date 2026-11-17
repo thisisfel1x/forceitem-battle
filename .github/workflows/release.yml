@@ -1,17 +1,27 @@
 name: Release
 
-# Publishes a release to GitHub and Modrinth when a version tag is pushed.
-# The GitHub release contains the plugin jar and the resource pack zip - the plugin downloads the pack
-# from exactly this release by default (URL and SHA-1 are baked into the jar at build time).
+# Publishes a release to GitHub and Modrinth. The GitHub release contains the plugin jar and the resource pack
+# zip - the plugin downloads the pack from exactly this release by default (URL and SHA-1 are baked into the jar).
+# One jar supports every version in gradle.properties -> supportedVersions, all of them are listed on Modrinth.
 #
-#   1. Set the new version in gradle.properties (e.g. version=1.1.0) and merge it to master
-#   2. git tag v1.1.0 && git push origin v1.1.0
+# Triggers:
+#   - a pushed version tag:
+#       1. set the new version in gradle.properties (e.g. version=1.1.0) and merge it to master
+#       2. git tag v1.1.0 && git push origin v1.1.0
+#   - a merged pull request of the "New Minecraft version" workflow (branch minecraft/<version>): the tag
+#     v<version from gradle.properties> is created automatically
 #
-# Tags with a suffix (e.g. v1.2.0-beta.1) are published as pre-release / beta.
+# Before publishing, build.yml verifies the commit (compatibility + smoke test for every supported version)
+# and the released files are exactly the files it built.
+# Versions with a suffix (e.g. 1.2.0-beta.1) are published as pre-release / beta.
 on:
   push:
     tags:
       - 'v*'
+  pull_request:
+    types: [closed]
+    branches:
+      - master
 
 permissions:
   contents: write
@@ -20,77 +30,114 @@ env:
   MODRINTH_PROJECT: 'awKBElnR'
 
 jobs:
-  release:
+  prepare:
+    name: Resolve version
+    if: >-
+      github.event_name == 'push' ||
+      (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'minecraft/'))
     runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.version.outputs.sha }}
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      channel: ${{ steps.version.outputs.channel }}
+      game-versions: ${{ steps.version.outputs.game-versions }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+          fetch-depth: 0
 
       - name: Resolve version
         id: version
         run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
           PROJECT_VERSION="$(grep -E '^version=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')"
 
-          if [ "$TAG_VERSION" != "$PROJECT_VERSION" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match version=$PROJECT_VERSION in gradle.properties"
-            exit 1
-          fi
-
-          echo "version=$PROJECT_VERSION" >> "$GITHUB_OUTPUT"
-          echo "minecraft=$(grep -E '^paperVersion=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
-          if [[ "$PROJECT_VERSION" == *-* ]]; then
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
-            echo "channel=beta" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            TAG="$GITHUB_REF_NAME"
+            if [ "${TAG#v}" != "$PROJECT_VERSION" ]; then
+              echo "::error::Tag $TAG does not match version=$PROJECT_VERSION in gradle.properties"
+              exit 1
+            fi
           else
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
-            echo "channel=release" >> "$GITHUB_OUTPUT"
+            TAG="v$PROJECT_VERSION"
+            if git rev-parse -q --verify "refs/tags/$TAG" > /dev/null; then
+              echo "::error::Tag $TAG already exists - bump the version in gradle.properties and tag manually"
+              exit 1
+            fi
           fi
 
-      - name: Set up JDK 25
-        uses: actions/setup-java@v4
-        with:
-          java-version: '25'
-          distribution: 'temurin'
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Build with Gradle
-        run: |
-          chmod +x gradlew
-          ./gradlew build
+          {
+            echo "sha=$(git rev-parse HEAD)"
+            echo "tag=$TAG"
+            echo "version=$PROJECT_VERSION"
+            if [[ "$PROJECT_VERSION" == *-* ]]; then
+              echo "prerelease=true"
+              echo "channel=beta"
+            else
+              echo "prerelease=false"
+              echo "channel=release"
+            fi
+            echo "game-versions<<EOF"
+            grep -E '^supportedVersions=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]' | tr ',' '\n'
+            echo
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Check item icons
         run: |
+          LATEST="$(grep -E '^supportedVersions=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]' | awk -F',' '{print $NF}')"
           ICON_VERSION="$(grep -oE '"minecraftVersion": *"[^"]+"' resourcepack/icons.json 2>/dev/null | cut -d'"' -f4)"
-          if [ "$ICON_VERSION" != "${{ steps.version.outputs.minecraft }}" ]; then
-            echo "::warning::Item icons were generated for Minecraft '${ICON_VERSION:-none}', the plugin targets ${{ steps.version.outputs.minecraft }}. Run the 'Generate item icons' workflow."
+          if [ "$ICON_VERSION" != "$LATEST" ]; then
+            echo "::warning::Item icons were generated for Minecraft '${ICON_VERSION:-none}', the newest supported version is $LATEST. Run the 'Generate item icons' workflow."
           fi
+
+  verify:
+    name: Verify
+    needs: prepare
+    uses: ./.github/workflows/build.yml
+    with:
+      ref: ${{ needs.prepare.outputs.sha }}
+
+  publish:
+    name: Publish
+    needs: [prepare, verify]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download verified build
+        uses: actions/download-artifact@v4
+        with:
+          name: forceitem-battle
+          path: build/libs
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: 'ForceItemBattle ${{ steps.version.outputs.version }}'
-          prerelease: ${{ steps.version.outputs.prerelease }}
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          target_commitish: ${{ needs.prepare.outputs.sha }}
+          name: 'ForceItemBattle ${{ needs.prepare.outputs.version }}'
+          prerelease: ${{ needs.prepare.outputs.prerelease }}
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
-            build/libs/forceitem-battle-${{ steps.version.outputs.version }}.jar
-            build/libs/forceitem-battle-pack-${{ steps.version.outputs.version }}.zip
+            build/libs/forceitem-battle-${{ needs.prepare.outputs.version }}.jar
+            build/libs/forceitem-battle-pack-${{ needs.prepare.outputs.version }}.zip
 
       - name: Upload to Modrinth
         uses: cloudnode-pro/modrinth-publish@v2
         with:
           token: ${{ secrets.MODRINTH_TOKEN }}
           project: ${{ env.MODRINTH_PROJECT }}
-          name: 'ForceItemBattle ${{ steps.version.outputs.version }}'
-          version: ${{ steps.version.outputs.version }}
-          channel: ${{ steps.version.outputs.channel }}
-          changelog: 'https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}'
+          name: 'ForceItemBattle ${{ needs.prepare.outputs.version }}'
+          version: ${{ needs.prepare.outputs.version }}
+          channel: ${{ needs.prepare.outputs.channel }}
+          changelog: 'https://github.com/${{ github.repository }}/releases/tag/${{ needs.prepare.outputs.tag }}'
           loaders: |-
             paper
           game-versions: |-
-            ${{ steps.version.outputs.minecraft }}
-          files: build/libs/forceitem-battle-${{ steps.version.outputs.version }}.jar
+            ${{ needs.prepare.outputs.game-versions }}
+          files: build/libs/forceitem-battle-${{ needs.prepare.outputs.version }}.jar

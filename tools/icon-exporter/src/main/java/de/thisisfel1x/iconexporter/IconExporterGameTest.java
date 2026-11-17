@@ -5,7 +5,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.NativeImage;
-import com.mojang.blaze3d.platform.Window;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
@@ -13,6 +12,8 @@ import net.fabricmc.fabric.api.client.gametest.v1.screenshot.TestScreenshotOptio
 import net.minecraft.SharedConstants;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.client.renderer.texture.SpriteContents;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FontDescription;
 import net.minecraft.network.chat.Style;
@@ -32,6 +33,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -90,7 +94,7 @@ public final class IconExporterGameTest implements FabricClientGameTest {
         try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
             singleplayer.getConnection().waitForChunksRender();
 
-            List<String> itemIds = this.exportIcons(context, config);
+            List<String> itemIds = this.exportIcons(context, singleplayer, config);
             this.writeManifest(config, itemIds);
             LOGGER.info("Exported {} item icons", itemIds.size());
 
@@ -102,13 +106,14 @@ public final class IconExporterGameTest implements FabricClientGameTest {
     // Export
     // ------------------------------------------------------------------------------------------
 
-    private List<String> exportIcons(ClientGameTestContext context, ExporterConfig config) {
+    private List<String> exportIcons(ClientGameTestContext context, TestSingleplayerContext singleplayer, ExporterConfig config) {
         List<Item> items = context.computeOnClient(minecraft -> BuiltInRegistries.ITEM.stream()
                 .filter(item -> item != Items.AIR)
                 .sorted(Comparator.comparing(item -> BuiltInRegistries.ITEM.getKey(item).toString()))
                 .toList());
 
         prepareEmptyIconDir(config.iconDir());
+        freezeTextureAnimations(context, singleplayer);
 
         int scale = config.scale();
         int iconSize = 16 * scale;
@@ -116,7 +121,7 @@ public final class IconExporterGameTest implements FabricClientGameTest {
         int width = SHEET_COLUMNS * CELL * scale;
         int height = SHEET_ROWS * CELL * scale;
 
-        applyWindow(context, width, height, scale);
+        ClientTests.applyWindow(context, width, height, scale);
 
         // Screens look up Minecraft.getInstance() in their constructor and must be created on the client thread
         IconSheetScreen screen = context.computeOnClient(minecraft -> new IconSheetScreen(CELL));
@@ -155,6 +160,46 @@ public final class IconExporterGameTest implements FabricClientGameTest {
 
         context.setScreen(() -> null);
         return exported;
+    }
+
+    /**
+     * Animated textures (magma, prismarine, command blocks, ...) must show the same frame in the black and the white
+     * render, otherwise the transparency is computed wrong - and the same frame in every export, otherwise each
+     * export changes these icons. Freezing the world stops the animations (they only tick while the level runs
+     * normally), then every animation is set back to its first frame.
+     */
+    private static void freezeTextureAnimations(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
+        singleplayer.getServer().runCommand("tick freeze");
+        context.waitFor(minecraft -> minecraft.level != null && !minecraft.level.tickRateManager().runsNormally(), 10 * 20);
+
+        context.runOnClient(minecraft -> {
+            try {
+                Field states = TextureAtlas.class.getDeclaredField("animatedTexturesStates");
+                Field frame = SpriteContents.AnimationState.class.getDeclaredField("frame");
+                Field subFrame = SpriteContents.AnimationState.class.getDeclaredField("subFrame");
+                Field dirty = SpriteContents.AnimationState.class.getDeclaredField("isDirty");
+                Method upload = TextureAtlas.class.getDeclaredMethod("uploadAnimationFrames");
+                for (AccessibleObject member : List.of(states, frame, subFrame, dirty, upload)) {
+                    member.setAccessible(true);
+                }
+
+                List<TextureAtlas> atlases = new ArrayList<>();
+                minecraft.getAtlasManager().forEach((id, atlas) -> atlases.add(atlas));
+                for (TextureAtlas atlas : atlases) {
+                    for (Object state : (List<?>) states.get(atlas)) {
+                        frame.setInt(state, 0);
+                        subFrame.setInt(state, 0);
+                        dirty.setBoolean(state, true);
+                    }
+                    upload.invoke(atlas);
+                }
+            } catch (ReflectiveOperationException | RuntimeException exception) {
+                // Internals of this Minecraft version differ - the freeze alone keeps black and white consistent
+                LOGGER.warn("Could not reset the texture animations to their first frame, animated icons may differ "
+                        + "between exports: {}", exception.toString());
+            }
+        });
+        context.waitTicks(2);
     }
 
     private Path renderSheet(ClientGameTestContext context, ExporterConfig config, IconSheetScreen screen,
@@ -202,7 +247,7 @@ public final class IconExporterGameTest implements FabricClientGameTest {
         PreviewScreen previewScreen = context.computeOnClient(minecraft -> new PreviewScreen(rows, config.previewIconSize()));
         context.setScreen(() -> previewScreen);
         for (int guiScale : new int[]{2, 3}) {
-            applyWindow(context, PREVIEW_WIDTH, PREVIEW_HEIGHT, guiScale);
+            ClientTests.applyWindow(context, PREVIEW_WIDTH, PREVIEW_HEIGHT, guiScale);
             context.waitTicks(3);
             this.takePreviewScreenshot(context, config, "compare-gui" + guiScale);
         }
@@ -293,7 +338,7 @@ public final class IconExporterGameTest implements FabricClientGameTest {
         context.waitTicks(10);
 
         for (int guiScale : new int[]{2, 3}) {
-            applyWindow(context, PREVIEW_WIDTH, PREVIEW_HEIGHT, guiScale);
+            ClientTests.applyWindow(context, PREVIEW_WIDTH, PREVIEW_HEIGHT, guiScale);
             context.waitTicks(3);
             this.takePreviewScreenshot(context, config, "bossbar-gui" + guiScale);
         }
@@ -329,26 +374,6 @@ public final class IconExporterGameTest implements FabricClientGameTest {
     // ------------------------------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------------------------------
-
-    /**
-     * Resizes the framebuffer and forces a GUI scale. Items in the GUI are drawn from an atlas whose
-     * slots are {@code 16 * guiScale} pixels big, so the GUI scale decides the icon resolution.
-     */
-    private static void applyWindow(ClientGameTestContext context, int width, int height, int guiScale) {
-        context.runOnClient(minecraft -> {
-            Window window = minecraft.getWindow();
-            window.setWidth(width);
-            window.setHeight(height);
-            minecraft.gameRenderer.resize(width, height);
-            minecraft.options.guiScale().set(guiScale);
-            minecraft.resizeGui();
-
-            if (window.getGuiScale() != guiScale) {
-                throw new IllegalStateException("Could not apply GUI scale " + guiScale + " to a " + width + "x" + height
-                        + " framebuffer (got " + window.getGuiScale() + ")");
-            }
-        });
-    }
 
     private static int currentPackFormat() {
         return SharedConstants.getCurrentVersion().packVersion(PackType.CLIENT_RESOURCES).major();
