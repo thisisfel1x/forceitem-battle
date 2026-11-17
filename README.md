@@ -13,6 +13,20 @@ The game principle is simple: Players are divided into teams and are tasked with
 * **End-Game Showcase:** An animated title sequence at the end of the game reveals all teams and their found items, from last place up to the winner.
 * **Custom Resource Pack:** Item icons in the boss bar and the scoreboard title are provided by a resource pack that is sent to players on join. The pack is built together with the plugin and attached to every release.
 
+-----
+
+## Commands & Permissions
+
+| Command                                       | Description                                                   | Permission              |
+|:----------------------------------------------|:--------------------------------------------------------------|:------------------------|
+| `/start <duration_in_min> <amount_of_jokers>` | Starts the game (also from the console). Jokers: 0 - 64.      | `forceitembattle.start` |
+| `/itemrecipe`                                 | Displays the crafting recipe for the current item.            | (None)                  |
+| `/backpack` or `/bp`                          | Opens the team backpack                                       | (None)                  |
+| `/spawn`                                      | Teleports player to world spawn location                      | (None)                  |
+| `/top`                                        | Teleports player to the highest block at the current location | (None)                  |
+
+The lobby settings item is only available with the permission `forceitembattle.settings`. Both permissions default to operators.
+
 ### Requirements
 
 * [Paper](https://papermc.io/) **1.21.11, 26.1.1, 26.1.2, 26.2 or 26.3** - one jar for all of them
@@ -148,47 +162,6 @@ For new Minecraft versions the **New Minecraft version** workflow does this auto
     The artifact `icon-preview` contains boss bar screenshots of the result.
 
 Locally (opens a game window for about a minute): `./gradlew -p tools/icon-exporter runClientGameTest`
-
------
-
-## Commands & Permissions
-
-| Command                                       | Description                                                   | Permission              |
-|:----------------------------------------------|:--------------------------------------------------------------|:------------------------|
-| `/start <duration_in_min> <amount_of_jokers>` | Starts the game (also from the console). Jokers: 0 - 64.      | `forceitembattle.start` |
-| `/itemrecipe`                                 | Displays the crafting recipe for the current item.            | (None)                  |
-| `/backpack` or `/bp`                          | Opens the team backpack                                       | (None)                  |
-| `/spawn`                                      | Teleports player to world spawn location                      | (None)                  |
-| `/top`                                        | Teleports player to the highest block at the current location | (None)                  |
-
-The lobby settings item is only available with the permission `forceitembattle.settings`. Both permissions default to operators.
-
------
-
-## Releasing
-
-Every pull request and every commit on `master` is verified by GitHub Actions (build, compile against every supported
-version, smoke tests). A release is published to GitHub and Modrinth
-
-* automatically when a pull request of the **New Minecraft version** workflow is merged, or
-* manually:
-    1.  Set the new version in `gradle.properties` (e.g. `version=1.1.0`) and merge it to `master`.
-    2.  Push a matching tag:
-
-        ```sh
-        git tag v1.1.0
-        git push origin v1.1.0
-        ```
-
-Before publishing, the release workflow verifies the commit again and publishes exactly the verified files. Versions
-with a suffix (e.g. `1.2.0-beta.1`) are published as pre-release. The GitHub release contains the plugin jar and the
-resource pack, the plugin loads the pack from there by default. Modrinth lists every version of `supportedVersions`.
-
-**Repository settings:** *Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests"*
-(icon and version pull requests) and the secret `MODRINTH_TOKEN`. Optional: a secret `AUTOMATION_TOKEN` (fine-grained
-token with contents + pull requests write) - pull requests opened by the workflows then also trigger the regular checks.
-
------
 
 ## License
 
