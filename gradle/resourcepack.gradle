@@ -69,11 +69,11 @@ def generateResourcePack = tasks.register('generateResourcePack') {
         def manifest = manifestFile.isFile() ? new JsonSlurper().parse(manifestFile) : null
 
         if (manifest == null) {
-            logger.warn("resourcepack/icons.json fehlt - das Pack enthält keine Item-Icons. Die CI rendert sie vor "
-                    + "jedem Build, lokal mit ./gradlew -p tools/icon-exporter runClientGameTest erzeugen.")
+            logger.warn("resourcepack/icons.json is missing, the pack contains no item icons. CI renders them before "
+                    + "every build, locally run ./gradlew -p tools/icon-exporter runClientGameTest")
         } else if (manifest.minecraftVersion != latestMinecraftVersion) {
-            logger.warn("Die Item-Icons wurden für Minecraft ${manifest.minecraftVersion} erzeugt, die neueste unterstützte "
-                    + "Version ist ${latestMinecraftVersion}. Neue Items haben kein Icon - bitte die Icons neu erzeugen.")
+            logger.warn("The item icons were rendered for Minecraft ${manifest.minecraftVersion}, the newest supported "
+                    + "version is ${latestMinecraftVersion}. New items have no icon, render the icons again")
         }
 
         // Item icons: gui atlas sprites fib:icon/<item id>

@@ -52,8 +52,8 @@ public class TeamManager {
         int configuredAmount = forceItemBattle.getConfig().getInt("teams.amount", 14);
         int amount = Math.max(1, Math.min(this.hexColorPalette.size(), configuredAmount));
         if (amount != configuredAmount) {
-            forceItemBattle.getLogger().warning("teams.amount muss zwischen 1 und " + this.hexColorPalette.size()
-                    + " liegen, verwende " + amount + ".");
+            forceItemBattle.getLogger().warning("teams.amount must be between 1 and " + this.hexColorPalette.size()
+                    + ", using " + amount);
         }
 
         int teamSize = Math.max(1, forceItemBattle.getConfig().getInt("teams.size", 2));
@@ -124,7 +124,7 @@ public class TeamManager {
             this.gamePlayers.remove(gamePlayer.getUniqueId());
             gamePlayer.ifOnline(player -> player.kick(
                     forceItemBattle.getPrefix()
-                            .append(Component.text("Es konnte kein freies Team mehr für dich gefunden werden.", NamedTextColor.RED))
+                            .append(Component.text("Es konnte kein freies Team mehr für dich gefunden werden", NamedTextColor.RED))
             ));
         }
     }

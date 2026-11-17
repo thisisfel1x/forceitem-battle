@@ -50,7 +50,7 @@ def main():
             print(f"  - {problem}")
         sys.exit(1)
 
-    pool = next((line.split("]: ", 1)[-1] for line in server.lines if "Items im Pool" in line), "?")
+    pool = next((line.split("]: ", 1)[-1] for line in server.lines if "items in the pool" in line), "?")
     print(f"Smoke test passed for Minecraft {args.minecraft}: {pool}")
 
 

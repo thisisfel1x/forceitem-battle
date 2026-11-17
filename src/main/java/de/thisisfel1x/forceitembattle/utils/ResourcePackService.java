@@ -42,7 +42,7 @@ public class ResourcePackService {
 
         if (!config.getBoolean("resource-pack.enabled", true)) {
             this.packInfo = null;
-            logger.info("Resource-Pack ist deaktiviert - Items werden ohne Icon angezeigt.");
+            logger.info("Resource pack is disabled, items are shown without icons");
             return;
         }
 
@@ -59,26 +59,26 @@ public class ResourcePackService {
             url = configuredUrl;
             hash = configuredHash;
             if (hash.isEmpty()) {
-                logger.warning("resource-pack.sha1 ist nicht gesetzt: Clients können das Pack nicht cachen "
-                        + "und bemerken Updates unter derselben URL nicht zuverlässig.");
+                logger.warning("resource-pack.sha1 is not set: clients cannot cache the pack "
+                        + "and may not notice updates under the same URL");
             }
         }
 
         if (!hash.isEmpty() && !hash.matches("[0-9a-f]{40}")) {
-            logger.warning("resource-pack.sha1 ist kein gültiger SHA-1 Hash (40 Hex-Zeichen) und wird ignoriert.");
+            logger.warning("resource-pack.sha1 is not a valid SHA-1 hash (40 hex characters) and is ignored");
             hash = "";
         }
 
         this.packInfo = createPackInfo(url, hash, logger);
         if (this.packInfo != null) {
-            logger.info("Resource-Pack: " + url);
+            logger.info("Resource pack: " + url);
         }
     }
 
     private static @Nullable ResourcePackInfo createPackInfo(String url, String hash, Logger logger) {
         if (url.isEmpty()) {
-            logger.warning("Keine Resource-Pack-URL vorhanden (resource-pack.url ist leer und das Plugin wurde ohne "
-                    + "Pack-Informationen gebaut) - Items werden ohne Icon angezeigt.");
+            logger.warning("No resource pack URL available (resource-pack.url is empty and the plugin was built "
+                    + "without pack information), items are shown without icons");
             return null;
         }
 
@@ -88,7 +88,7 @@ public class ResourcePackService {
             UUID id = UUID.nameUUIDFromBytes((url + '#' + hash).getBytes(StandardCharsets.UTF_8));
             return ResourcePackInfo.resourcePackInfo(id, uri, hash);
         } catch (IllegalArgumentException exception) {
-            logger.warning("resource-pack.url ist keine gültige URL: " + url);
+            logger.warning("resource-pack.url is not a valid URL: " + url);
             return null;
         }
     }
@@ -102,7 +102,7 @@ public class ResourcePackService {
                 properties.load(reader);
             }
         } catch (IOException exception) {
-            forceItemBattle.getLogger().log(Level.WARNING, BUNDLED_INFO + " konnte nicht gelesen werden", exception);
+            forceItemBattle.getLogger().log(Level.WARNING, "Could not read " + BUNDLED_INFO, exception);
         }
         return properties;
     }

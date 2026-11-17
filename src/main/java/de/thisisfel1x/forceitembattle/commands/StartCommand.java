@@ -31,7 +31,7 @@ public class StartCommand implements BasicCommand {
         CommandSender sender = source.getSender();
 
         if (this.forceItemBattle.getGameManager().getCurrentGameState().getGameStateEnum() != GameStateEnum.IDLE) {
-            this.sendError(sender, "Das Spiel läuft bereits oder wurde schon gestartet.");
+            this.sendError(sender, "Das Spiel läuft bereits oder wurde schon gestartet");
             return;
         }
 
@@ -42,20 +42,20 @@ public class StartCommand implements BasicCommand {
 
         OptionalInt minutes = parseInt(args[0]);
         if (minutes.isEmpty() || minutes.getAsInt() < 1 || minutes.getAsInt() > MAX_MINUTES) {
-            this.sendError(sender, "Die Dauer muss eine Zahl zwischen 1 und " + MAX_MINUTES + " Minuten sein.");
+            this.sendError(sender, "Die Dauer muss eine Zahl zwischen 1 und " + MAX_MINUTES + " Minuten sein");
             return;
         }
 
         OptionalInt jokerAmount = parseInt(args[1]);
         if (jokerAmount.isEmpty() || jokerAmount.getAsInt() < 0 || jokerAmount.getAsInt() > ForceItemBattleTeam.MAX_JOKER_STACK) {
-            this.sendError(sender, "Die Joker-Anzahl muss eine Zahl zwischen 0 und " + ForceItemBattleTeam.MAX_JOKER_STACK + " sein.");
+            this.sendError(sender, "Die Joker-Anzahl muss eine Zahl zwischen 0 und " + ForceItemBattleTeam.MAX_JOKER_STACK + " sein");
             return;
         }
 
         boolean anyPlayer = this.forceItemBattle.getTeamManager().getGamePlayers().values().stream()
                 .anyMatch(gamePlayer -> !gamePlayer.isSpectator());
         if (!anyPlayer) {
-            this.sendError(sender, "Es sind keine Spieler online.");
+            this.sendError(sender, "Es sind keine Spieler online");
             return;
         }
 

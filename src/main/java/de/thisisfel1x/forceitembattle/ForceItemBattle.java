@@ -90,7 +90,7 @@ public final class ForceItemBattle extends JavaPlugin {
             this.scoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(this);
         } catch (NoPacketAdapterAvailableException ignored) {
             this.scoreboardLibrary = new NoopScoreboardLibrary();
-            this.getLogger().warning("No scoreboard packet adapter available!");
+            this.getLogger().warning("No scoreboard packet adapter available for this server version");
         }
         this.forceItemBattleScoreboardManager = new ForceItemBattleScoreboardManager(this);
 
@@ -138,8 +138,8 @@ public final class ForceItemBattle extends JavaPlugin {
                 .toList();
 
         if (!missing.isEmpty()) {
-            this.getLogger().warning(missing.size() + " Items im Pool haben kein Icon im Resource-Pack "
-                    + "(werden nur mit Namen angezeigt, Icons neu erzeugen): " + String.join(", ", missing));
+            this.getLogger().warning(missing.size() + " items in the pool have no icon in the resource pack "
+                    + "and are shown by name only: " + String.join(", ", missing));
         }
     }
 

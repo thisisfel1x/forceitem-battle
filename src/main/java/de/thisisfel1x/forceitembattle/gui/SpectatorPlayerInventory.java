@@ -46,7 +46,7 @@ public class SpectatorPlayerInventory {
                 Player currentTarget = gamePlayer.getPlayer();
                 if (currentTarget == null) {
                     player.sendMessage(this.forceItemBattle.getPrefix()
-                            .append(Component.text("Dieser Spieler ist nicht mehr online.", NamedTextColor.RED)));
+                            .append(Component.text("Dieser Spieler ist nicht mehr online", NamedTextColor.RED)));
                     return;
                 }
                 player.teleport(currentTarget.getLocation());

@@ -132,7 +132,7 @@ public class ItemRegistry {
             if (name.isEmpty()) continue;
 
             if (Material.getMaterial(name) == null) {
-                logger.warning("items.additional-banned: Unbekanntes Material '" + entry + "' wird ignoriert.");
+                logger.warning("items.additional-banned: unknown material '" + entry + "' is ignored");
                 continue;
             }
             configBanned.add(name);
@@ -164,7 +164,7 @@ public class ItemRegistry {
             FINDABLE_ITEMS.add(new ItemStack(material));
         }
 
-        logger.info(FINDABLE_ITEMS.size() + " Items im Pool.");
+        logger.info(FINDABLE_ITEMS.size() + " items in the pool");
     }
 
     /**

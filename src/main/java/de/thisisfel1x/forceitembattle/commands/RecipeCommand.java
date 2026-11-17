@@ -31,7 +31,7 @@ public class RecipeCommand implements BasicCommand {
     @Override
     public void execute(CommandSourceStack source, String[] args) {
         if (!(source.getSender() instanceof Player player)) {
-            source.getSender().sendMessage(Component.text("Dieser Befehl ist nur für Spieler.", NamedTextColor.RED));
+            source.getSender().sendMessage(Component.text("Dieser Befehl ist nur für Spieler", NamedTextColor.RED));
             return;
         }
 
@@ -52,7 +52,7 @@ public class RecipeCommand implements BasicCommand {
         List<Recipe> recipes = Bukkit.getRecipesFor(targetItem);
 
         if (recipes.isEmpty()) {
-            player.sendMessage(plugin.getPrefix().append(Component.text("Für dieses Item gibt es kein Herstellungsrezept.", NamedTextColor.YELLOW)));
+            player.sendMessage(plugin.getPrefix().append(Component.text("Für dieses Item gibt es kein Herstellungsrezept", NamedTextColor.YELLOW)));
             return;
         }
 
@@ -96,7 +96,7 @@ public class RecipeCommand implements BasicCommand {
             }
         } else {
             // Für andere Rezept-Typen wie Schmelzen, Schmieden etc.
-            player.sendMessage(plugin.getPrefix().append(Component.text("Dieser Rezept-Typ kann nicht angezeigt werden.", NamedTextColor.YELLOW)));
+            player.sendMessage(plugin.getPrefix().append(Component.text("Dieser Rezept-Typ kann nicht angezeigt werden", NamedTextColor.YELLOW)));
             return;
         }
         recipeView.open(player);

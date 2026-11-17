@@ -45,7 +45,7 @@ public class IconManager {
 
         try (InputStream inputStream = this.forceItemBattle.getResource(ICON_LIST)) {
             if (inputStream == null) {
-                this.forceItemBattle.getLogger().warning(ICON_LIST + " fehlt im Plugin - Items werden ohne Icon angezeigt.");
+                this.forceItemBattle.getLogger().warning(ICON_LIST + " is missing in the plugin, items are shown without icons");
                 return;
             }
 
@@ -56,10 +56,10 @@ public class IconManager {
                         .forEach(this.icons::add);
             }
 
-            this.forceItemBattle.getLogger().info(this.icons.size() + " Item-Icons im Resource-Pack.");
+            this.forceItemBattle.getLogger().info(this.icons.size() + " item icons in the resource pack");
         } catch (IOException exception) {
             this.forceItemBattle.getLogger().log(Level.WARNING,
-                    ICON_LIST + " konnte nicht geladen werden - Items werden ohne Icon angezeigt.", exception);
+                    "Could not load " + ICON_LIST + ", items are shown without icons", exception);
         }
     }
 

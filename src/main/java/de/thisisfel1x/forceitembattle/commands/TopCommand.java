@@ -23,7 +23,7 @@ public class TopCommand implements BasicCommand {
     @Override
     public void execute(CommandSourceStack source, String[] args) {
         if (!(source.getSender() instanceof Player player)) {
-            source.getSender().sendMessage(Component.text("Dieser Befehl ist nur für Spieler.", NamedTextColor.RED));
+            source.getSender().sendMessage(Component.text("Dieser Befehl ist nur für Spieler", NamedTextColor.RED));
             return;
         }
 
@@ -41,7 +41,7 @@ public class TopCommand implements BasicCommand {
 
         if (player.getWorld().getEnvironment() == World.Environment.NETHER) {
             player.sendMessage(this.forceItemBattle.getPrefix()
-                    .append(Component.text("Der Command ist nur für die Overworld nutzbar.",
+                    .append(Component.text("Der Command ist nur für die Overworld nutzbar",
                             NamedTextColor.RED)));
         } else {
             Location topLocation = player.getWorld().getHighestBlockAt(player.getLocation())
