@@ -85,11 +85,17 @@ public final class IconExporterGameTest implements FabricClientGameTest {
         ExporterConfig config = ExporterConfig.fromSystemProperties();
         LOGGER.info("Exporting item icons to {}", config.iconDir());
 
-        List<String> itemIds = this.exportIcons(context, config);
-        this.writeManifest(config, itemIds);
-        LOGGER.info("Exported {} item icons", itemIds.size());
+        // Since 26.x the item components come from the (built-in) datapack and are only bound while a
+        // world is loaded - ItemStacks cannot be created on the title screen
+        try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
+            singleplayer.getConnection().waitForChunksRender();
 
-        this.renderPreview(context, config, itemIds);
+            List<String> itemIds = this.exportIcons(context, config);
+            this.writeManifest(config, itemIds);
+            LOGGER.info("Exported {} item icons", itemIds.size());
+
+            this.renderPreview(context, singleplayer, config, itemIds);
+        }
     }
 
     // ------------------------------------------------------------------------------------------
@@ -112,7 +118,8 @@ public final class IconExporterGameTest implements FabricClientGameTest {
 
         applyWindow(context, width, height, scale);
 
-        IconSheetScreen screen = new IconSheetScreen(CELL);
+        // Screens look up Minecraft.getInstance() in their constructor and must be created on the client thread
+        IconSheetScreen screen = context.computeOnClient(minecraft -> new IconSheetScreen(CELL));
         context.setScreen(() -> screen);
         context.waitTicks(2);
 
@@ -177,7 +184,7 @@ public final class IconExporterGameTest implements FabricClientGameTest {
     // Preview: sprite object component vs. bitmap font glyph
     // ------------------------------------------------------------------------------------------
 
-    private void renderPreview(ClientGameTestContext context, ExporterConfig config, List<String> exportedIds) {
+    private void renderPreview(ClientGameTestContext context, TestSingleplayerContext singleplayer, ExporterConfig config, List<String> exportedIds) {
         List<String> previewIds = PREVIEW_ITEMS.stream().filter(exportedIds::contains).toList();
         if (previewIds.isEmpty()) {
             LOGGER.warn("None of the preview items exists in this version, skipping the preview");
@@ -192,7 +199,7 @@ public final class IconExporterGameTest implements FabricClientGameTest {
                 .map(id -> new PreviewScreen.Row(spriteIcon(id), fontIcon(previewIds.indexOf(id)), itemName(id)))
                 .toList());
 
-        PreviewScreen previewScreen = new PreviewScreen(rows, config.previewIconSize());
+        PreviewScreen previewScreen = context.computeOnClient(minecraft -> new PreviewScreen(rows, config.previewIconSize()));
         context.setScreen(() -> previewScreen);
         for (int guiScale : new int[]{2, 3}) {
             applyWindow(context, PREVIEW_WIDTH, PREVIEW_HEIGHT, guiScale);
@@ -201,7 +208,7 @@ public final class IconExporterGameTest implements FabricClientGameTest {
         }
         context.setScreen(() -> null);
 
-        this.renderBossBars(context, config, previewIds);
+        this.renderBossBars(context, singleplayer, config, previewIds);
     }
 
     private void writePreviewPack(ExporterConfig config, Path packDir, List<String> previewIds) {
@@ -254,12 +261,13 @@ public final class IconExporterGameTest implements FabricClientGameTest {
             }
             return minecraft.reloadResourcePacks();
         });
-        context.waitFor(minecraft -> reload.isDone(), 120 * 20);
+        // The loading overlay fades out after the reload, screenshots before that are covered by it
+        context.waitFor(minecraft -> reload.isDone() && minecraft.gui.overlay() == null, 120 * 20);
         reload.join();
-        context.waitTicks(20);
+        context.waitTicks(5);
     }
 
-    private void renderBossBars(ClientGameTestContext context, ExporterConfig config, List<String> previewIds) {
+    private void renderBossBars(ClientGameTestContext context, TestSingleplayerContext singleplayer, ExporterConfig config, List<String> previewIds) {
         List<Component> names = context.computeOnClient(minecraft -> {
             List<Component> result = new ArrayList<>();
             for (String id : BOSSBAR_ITEMS) {
@@ -273,24 +281,21 @@ public final class IconExporterGameTest implements FabricClientGameTest {
             return result;
         });
 
-        try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
-            singleplayer.getConnection().waitForChunksRender();
-            singleplayer.getServer().runOnServer(server -> {
-                ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
-                for (Component name : names) {
-                    ServerBossEvent bossBar = new ServerBossEvent(UUID.randomUUID(), name,
-                            BossEvent.BossBarColor.WHITE, BossEvent.BossBarOverlay.PROGRESS);
-                    bossBar.addPlayer(player);
-                }
-            });
-            singleplayer.getConnection().waitForClientboundPackets();
-            context.waitTicks(10);
-
-            for (int guiScale : new int[]{2, 3}) {
-                applyWindow(context, PREVIEW_WIDTH, PREVIEW_HEIGHT, guiScale);
-                context.waitTicks(3);
-                this.takePreviewScreenshot(context, config, "bossbar-gui" + guiScale);
+        singleplayer.getServer().runOnServer(server -> {
+            ServerPlayer player = server.getPlayerList().getPlayers().getFirst();
+            for (Component name : names) {
+                ServerBossEvent bossBar = new ServerBossEvent(UUID.randomUUID(), name,
+                        BossEvent.BossBarColor.WHITE, BossEvent.BossBarOverlay.PROGRESS);
+                bossBar.addPlayer(player);
             }
+        });
+        singleplayer.getConnection().waitForClientboundPackets();
+        context.waitTicks(10);
+
+        for (int guiScale : new int[]{2, 3}) {
+            applyWindow(context, PREVIEW_WIDTH, PREVIEW_HEIGHT, guiScale);
+            context.waitTicks(3);
+            this.takePreviewScreenshot(context, config, "bossbar-gui" + guiScale);
         }
     }
 
