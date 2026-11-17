@@ -86,6 +86,8 @@ public final class IconExporterGameTest implements FabricClientGameTest {
 
     @Override
     public void runTest(ClientGameTestContext context) {
+        if (!ClientTests.isSelected("icons")) return;
+
         ExporterConfig config = ExporterConfig.fromSystemProperties();
         LOGGER.info("Exporting item icons to {}", config.iconDir());
 

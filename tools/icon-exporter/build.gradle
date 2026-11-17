@@ -13,7 +13,7 @@ dependencies {
 
 fabricApi {
     configureTests {
-        // Only the client gametest (= the exporter) is needed, no server gametests and therefore no EULA
+        // Only client gametests (icon exporter, end-to-end test) are needed, no server gametests
         enableGameTests = false
         enableClientGameTests = true
     }
@@ -22,7 +22,22 @@ fabricApi {
 // Paths are relative to the repository root, so the export lands directly in the plugin's resource pack sources
 def repositoryRoot = rootDir.parentFile.parentFile
 
+// Which client test runs: 'icons' (default, IconExporterGameTest) or 'e2e' (ServerEndToEndGameTest, started by
+// tools/smoke-test/e2e_test.py together with a Paper server: -PclientTest=e2e -Pe2eServer=host:port)
+def clientTest = (project.findProperty('clientTest') ?: 'icons') as String
+// A game needs two players: the end-to-end test runs a second client (-Pe2eRole=secondary) in parallel, with its
+// own run directory and user name
+def e2eRole = (project.findProperty('e2eRole') ?: 'primary') as String
+
 loom.runs.matching { it.name == 'clientGameTest' }.configureEach {
+    vmArg "-Dfib.test=${clientTest}"
+    vmArg "-Dfib.e2e.server=${project.findProperty('e2eServer') ?: ''}"
+    vmArg "-Dfib.e2e.role=${e2eRole}"
+    vmArg "-Dfib.e2e.output=${layout.buildDirectory.dir('e2e-test').get().asFile.absolutePath}"
+    if (e2eRole == 'secondary') {
+        runDir = 'build/run/clientGameTest-secondary'
+        programArguments.set(['--username', 'Player1'])
+    }
     vmArg "-Dfib.icons.dir=${new File(repositoryRoot, 'resourcepack/icons').absolutePath}"
     vmArg "-Dfib.icons.manifest=${new File(repositoryRoot, 'resourcepack/icons.json').absolutePath}"
     vmArg "-Dfib.icons.preview=${layout.buildDirectory.dir('icon-preview').get().asFile.absolutePath}"

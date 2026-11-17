@@ -1,5 +1,5 @@
 """
-Helpers for smoke_test.py: downloads Paper, prepares a server directory (accepts the
+Shared helpers for smoke_test.py and e2e_test.py: downloads Paper, prepares a server directory (accepts the
 Minecraft EULA - https://aka.ms/MinecraftEULA), runs the server and checks its log.
 """
 
@@ -81,6 +81,9 @@ def prepare_server(server_dir, plugin_jar, port):
             f"server-port={port}",
             "server-ip=127.0.0.1",
             "online-mode=false",
+            # Newer Paper versions enable the whitelist by default - the end-to-end test client has to join
+            "white-list=false",
+            "enforce-whitelist=false",
             "level-type=minecraft\\:flat",
             "generate-structures=false",
             "spawn-protection=0",
@@ -126,6 +129,19 @@ class PaperServer:
                 new_lines = self.lines[checked:]
                 checked = len(self.lines)
             if any(predicate(line) for line in new_lines):
+                return True
+            if self.process.poll() is not None:
+                return False
+            time.sleep(0.25)
+        return False
+
+    def wait_for_count(self, predicate, count, timeout):
+        """Waits until predicate(line) matched count log lines in total."""
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            with self._lock:
+                matches = sum(1 for line in self.lines if predicate(line))
+            if matches >= count:
                 return True
             if self.process.poll() is not None:
                 return False

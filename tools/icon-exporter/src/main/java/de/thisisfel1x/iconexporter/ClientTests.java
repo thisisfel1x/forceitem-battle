@@ -4,11 +4,19 @@ import com.mojang.blaze3d.platform.Window;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 
 /**
- * Helpers for client tests.
+ * Helpers shared by the client tests. All client tests are registered in fabric.mod.json, the system property
+ * {@code fib.test} (set by build.gradle) decides which one actually runs.
  */
 final class ClientTests {
 
     private ClientTests() {
+    }
+
+    /**
+     * @param name {@code icons} or {@code e2e}
+     */
+    static boolean isSelected(String name) {
+        return name.equals(System.getProperty("fib.test", "icons"));
     }
 
     /**

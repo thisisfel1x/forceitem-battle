@@ -76,9 +76,10 @@ Useful while developing:
 |:---------------------------------------------------------|:----------------------------------------------------------|
 | `./gradlew runServer -PtestVersion=26.1.2`               | Local test server of any supported version (default: newest) |
 | `./gradlew compileJava -PcompileVersion=26.2`            | Compile against the API of another supported version      |
-| `python3 tools/smoke-test/smoke_test.py --minecraft 1.21.11 --plugin build/libs/forceitem-battle-1.1.0.jar` | Start a Paper server with the jar and check the log |
+| `python3 tools/smoke-test/smoke_test.py --minecraft 1.21.11 --plugin build/libs/forceitem-battle-1.2.0.jar` | Start a Paper server with the jar and check the log |
+| `python3 tools/smoke-test/e2e_test.py --plugin build/libs/forceitem-battle-1.2.0.jar --pack build/libs/forceitem-battle-pack-1.2.0.zip` | Server + two real game clients play a game, checks the boss bar icon (opens two game windows) |
 
-The script accepts the [Minecraft EULA](https://aka.ms/MinecraftEULA) for its test servers.
+The scripts accept the [Minecraft EULA](https://aka.ms/MinecraftEULA) for their test servers.
 
 -----
 
@@ -98,14 +99,14 @@ resourcePackMaxFormat=97
 * One resource pack serves all versions (format range in `pack.mcmeta`). Items are never removed from the game, so the
   icons of the newest version cover the older ones.
 * CI compiles against the API of every version and starts a real Paper server of every version with the jar
-  (smoke test).
+  (smoke test). Two real clients play a game on the newest version (end-to-end test).
 
 ### New Minecraft versions
 
 The workflow **New Minecraft version** checks daily for a new Minecraft version with a stable Paper build. If there is
 one, it adds the version to `supportedVersions`, raises `resourcePackMaxFormat`, bumps the patch version, renders the
 icons with the new client (as soon as Fabric supports it) and opens a pull request `Support Minecraft <version>`.
-The same run verifies the branch (compile, smoke test). **Merging the pull request publishes the
+The same run verifies the branch (compile, smoke test, end-to-end test). **Merging the pull request publishes the
 release to GitHub and Modrinth.** It can also be started manually with explicit versions.
 
 Dropping an old version: remove it from `supportedVersions` and set `resourcePackMinFormat` to the format of the new
