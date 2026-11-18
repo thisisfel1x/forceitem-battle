@@ -1,0 +1,44 @@
+# ForceItemBattle configuration
+
+resource-pack:
+  # Send the custom resource pack (item icons, scoreboard title glyphs) on join.
+  # Without the pack items are shown by name only.
+  enabled: true
+  # Empty (recommended): the pack of the GitHub release of exactly this plugin version
+  #   (forceitem-battle-pack-<version>.zip) is used. URL and SHA-1 are built into the plugin.
+  # Own host: a direct download link to the pack zip, e.g. for a modified pack or a dev build.
+  url: ""
+  # SHA-1 of the pack zip (40 hex characters). Only needed together with an own url -
+  # without it clients cannot cache the pack and will not notice pack updates reliably.
+  sha1: ""
+  # Players that decline the pack are disconnected
+  required: true
+
+teams:
+  # Number of teams (max. 18)
+  amount: 14
+  # Players per team
+  size: 2
+
+jokers:
+  # true:  the joker amount from /start is given once per team (fair for mixed team sizes)
+  # false: every team member receives the full joker amount
+  per-team: true
+
+hunger:
+  # Players lose hunger while the game is running
+  # false: the food bar stays full the whole game
+  enabled: false
+
+scoreboard:
+  # Show the live team ranking in the sidebar while the game is running
+  show-ranking-ingame: false
+
+results:
+  # Stop the server after the results have been shown
+  shutdown-server: true
+  shutdown-delay-seconds: 20
+
+items:
+  # Additional material names that should never be chosen, e.g. [ENDER_CHEST, SPORE_BLOSSOM]
+  additional-banned: []

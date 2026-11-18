@@ -2,13 +2,13 @@ package de.thisisfel1x.forceitembattle.player;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.teams.ForceItemBattleTeam;
-import dev.triumphteam.gui.builder.item.ItemBuilder;
+import de.thisisfel1x.forceitembattle.utils.Items;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.ArmorStand;
@@ -20,10 +20,15 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public class GamePlayer {
+
+    private static final double FROZEN_SPEED = 0.00001;
+    private static final double DEFAULT_SPEED = 0.1;
 
     private final String name;
     private final UUID uniqueId;
@@ -42,7 +47,7 @@ public class GamePlayer {
     }
 
     public void sendMessage(Component message) {
-        this.getPlayer().sendMessage(message);
+        this.ifOnline(player -> player.sendMessage(message));
     }
 
     public String getName() {
@@ -53,8 +58,25 @@ public class GamePlayer {
         return uniqueId;
     }
 
-    public Player getPlayer() {
+    /**
+     * @return the Bukkit player or {@code null} if the player is currently offline
+     */
+    public @Nullable Player getPlayer() {
         return Bukkit.getPlayer(this.uniqueId);
+    }
+
+    public boolean isOnline() {
+        return this.getPlayer() != null;
+    }
+
+    /**
+     * Runs the action only if the player is currently online.
+     */
+    public void ifOnline(Consumer<Player> action) {
+        Player player = this.getPlayer();
+        if (player != null) {
+            action.accept(player);
+        }
     }
 
     public ForceItemBattleTeam getTeam() {
@@ -74,7 +96,7 @@ public class GamePlayer {
     }
 
     public boolean isActive() {
-        return this.getPlayer().isOnline();
+        return this.isOnline();
     }
 
     public boolean isSpectator() {
@@ -86,92 +108,120 @@ public class GamePlayer {
     }
 
     public void cleanOnJoin() {
-        this.getPlayer().getInventory().clear();
-        this.getPlayer().getInventory().setHelmet(null);
-        this.getPlayer().getInventory().setChestplate(null);
-        this.getPlayer().getInventory().setLeggings(null);
-        this.getPlayer().getInventory().setBoots(null);
+        this.ifOnline(player -> {
+            player.closeInventory();
+            player.getInventory().clear();
+            player.getInventory().setArmorContents(null);
 
-        this.getPlayer().setHealth(20);
-        this.getPlayer().setFoodLevel(20);
-        this.getPlayer().setSaturation(10);
-        this.getPlayer().setExp(0);
-        this.getPlayer().setLevel(0);
+            player.setHealth(20);
+            player.setFoodLevel(20);
+            player.setSaturation(10);
+            player.setExp(0);
+            player.setLevel(0);
+        });
     }
 
     public void setLobbyInventory() {
-        this.getPlayer().getInventory().clear();
+        this.ifOnline(player -> {
+            player.getInventory().clear();
 
-        ItemStack teamSelector = ItemBuilder.from(Material.AMETHYST_SHARD).name(Component.text("Wähle dein Team", NamedTextColor.WHITE)).glow().build();
-        this.getPlayer().getInventory().setItem(0, teamSelector);
+            ItemStack teamSelector = Items.named(Material.AMETHYST_SHARD,
+                    Component.text("Wähle dein Team", NamedTextColor.WHITE), true);
+            player.getInventory().setItem(0, teamSelector);
 
-        if (this.getPlayer().hasPermission("forceitembattle.settings")) {
-            ItemStack settingsItem = ItemBuilder.from(Material.BRUSH).name(Component.text("Einstellungen", NamedTextColor.RED)).glow().build();
-            this.getPlayer().getInventory().setItem(1, settingsItem);
-        }
-
+            if (player.hasPermission("forceitembattle.settings")) {
+                ItemStack settingsItem = Items.named(Material.PAPER,
+                        Component.text("Einstellungen", NamedTextColor.RED), true);
+                settingsItem.editMeta(itemMeta -> itemMeta.setItemModel(NamespacedKey.fromString("fib:win")));
+                player.getInventory().setItem(1, settingsItem);
+            }
+        });
     }
 
     public void setSpectatorInventory() {
-        this.getPlayer().getInventory().clear();
+        this.ifOnline(player -> {
+            player.getInventory().clear();
 
-        this.getPlayer().setGameMode(GameMode.ADVENTURE);
-        this.getPlayer().setAllowFlight(true);
-        this.getPlayer().setFlying(true);
+            player.setGameMode(GameMode.ADVENTURE);
+            player.setAllowFlight(true);
+            player.setFlying(true);
 
-        for (GamePlayer gamePlayer : ForceItemBattle.getInstance().getTeamManager().getGamePlayers().values()) {
-            if (!gamePlayer.isSpectator()) {
-                gamePlayer.getPlayer().hidePlayer(ForceItemBattle.getInstance(), this.getPlayer());
+            ForceItemBattle plugin = ForceItemBattle.getInstance();
+            for (GamePlayer gamePlayer : plugin.getTeamManager().getGamePlayers().values()) {
+                if (!gamePlayer.isSpectator()) {
+                    gamePlayer.ifOnline(other -> other.hidePlayer(plugin, player));
+                }
             }
-        }
 
-        ItemStack teamSelector = ItemBuilder.from(Material.COMPASS).name(Component.text("Spieler beobachten", NamedTextColor.WHITE)
-                .decoration(TextDecoration.ITALIC, false)).build();
-        this.getPlayer().getInventory().setItem(0, teamSelector);
+            ItemStack playerCompass = Items.named(Material.COMPASS,
+                    Component.text("Spieler beobachten", NamedTextColor.WHITE));
+            player.getInventory().setItem(0, playerCompass);
+        });
     }
 
     public void addEffectsForGame() {
-        this.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, 20 * 30, 1));
-        this.getPlayer().addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 30, 0));
+        this.ifOnline(player -> {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, 20 * 30, 1));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20 * 30, 0));
+        });
     }
 
     public void freezePlayer() {
         if (this.isSpectator()) return;
-
-        AttributeInstance attributeInstance = this.getPlayer().getAttribute(Attribute.MOVEMENT_SPEED);
-        if (attributeInstance != null)
-            attributeInstance.setBaseValue(0.00001);
+        this.setMovementSpeed(FROZEN_SPEED);
     }
 
     public void unfreezePlayer() {
         if (this.isSpectator()) return;
-
-        AttributeInstance attributeInstance = this.getPlayer().getAttribute(Attribute.MOVEMENT_SPEED);
-        if (attributeInstance != null)
-            attributeInstance.setBaseValue(0.1);
+        this.setMovementSpeed(DEFAULT_SPEED);
     }
 
-    public void updateArmorstandItem() {
-        if(this.isSpectator()) return;
-
-        this.getPlayer().getPassengers().forEach(passenger -> {
-            this.getPlayer().removePassenger(passenger);
-            passenger.remove();
+    private void setMovementSpeed(double speed) {
+        this.ifOnline(player -> {
+            AttributeInstance attributeInstance = player.getAttribute(Attribute.MOVEMENT_SPEED);
+            if (attributeInstance != null) {
+                attributeInstance.setBaseValue(speed);
+            }
         });
+    }
+
+    /**
+     * (Re-)spawns the armor stand above the player's head showing the team's current item.
+     */
+    public void updateArmorstandItem() {
+        if (this.isSpectator() || !this.isInTeam()) return;
+
+        this.removeArmorstand();
+
+        this.ifOnline(player -> player.addPassenger(player.getWorld().spawnEntity(player.getLocation(),
+                EntityType.ARMOR_STAND, CreatureSpawnEvent.SpawnReason.CUSTOM, entity -> {
+                    ArmorStand armorStand = (ArmorStand) entity;
+
+                    armorStand.setInvisible(true);
+                    armorStand.setInvulnerable(true);
+                    // Never save the stand to disk, it is recreated whenever needed
+                    armorStand.setPersistent(false);
+                    armorStand.setItem(EquipmentSlot.HEAD, this.getTeam().getCurrentItem());
+
+                    this.lastPassenger = armorStand;
+                })));
+    }
+
+    /**
+     * Removes the item armor stand, e.g. when the player quits or the game ends.
+     */
+    public void removeArmorstand() {
+        this.ifOnline(player -> player.getPassengers().forEach(passenger -> {
+            player.removePassenger(passenger);
+            if (passenger instanceof ArmorStand) {
+                passenger.remove();
+            }
+        }));
 
         if (this.lastPassenger != null) {
             this.lastPassenger.remove();
+            this.lastPassenger = null;
         }
-
-        this.getPlayer().addPassenger(this.getPlayer().getWorld().spawnEntity(this.getPlayer().getLocation(),
-                EntityType.ARMOR_STAND, CreatureSpawnEvent.SpawnReason.CUSTOM, entity -> {
-            ArmorStand armorStand = (ArmorStand) entity;
-
-            armorStand.setInvisible(true);
-            armorStand.setItem(EquipmentSlot.HEAD, this.getTeam().getCurrentItem());
-
-            this.lastPassenger = armorStand;
-        }));
     }
 
 }

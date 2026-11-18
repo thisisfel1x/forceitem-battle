@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "fib-icon-exporter",
+  "version": "${version}",
+  "name": "ForceItemBattle Icon Exporter",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": [
+      "de.thisisfel1x.iconexporter.IconExporterGameTest"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.20.1",
+    "minecraft": "${minecraftVersion}",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

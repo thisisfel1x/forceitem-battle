@@ -10,15 +10,13 @@ import java.util.List;
 
 public abstract class AbstractSetting<T> {
 
-    protected final String key;
     protected final Component name;
     protected final List<Component> description;
     protected final Material iconMaterial;
     protected final T defaultValue;
     protected T value;
 
-    public AbstractSetting(String key, Component name, List<Component> description, Material iconMaterial, T defaultValue) {
-        this.key = key;
+    public AbstractSetting(Component name, List<Component> description, Material iconMaterial, T defaultValue) {
         this.name = name;
         this.description = description;
         this.iconMaterial = iconMaterial;
@@ -32,10 +30,6 @@ public abstract class AbstractSetting<T> {
 
     public void setValue(T value) {
         this.value = value;
-    }
-
-    public String getKey() {
-        return key;
     }
 
     public Component getName() {

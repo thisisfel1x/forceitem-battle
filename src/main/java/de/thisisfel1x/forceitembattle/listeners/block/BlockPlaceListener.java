@@ -17,7 +17,7 @@ public class BlockPlaceListener implements Listener {
     }
 
     @EventHandler
-    public void onBlockBreak(BlockPlaceEvent event) {
+    public void onBlockPlace(BlockPlaceEvent event) {
         GameStateEnum gameStateEnum = this.forceItemBattle.getGameManager().getCurrentGameState().getGameStateEnum();
         if (gameStateEnum != GameStateEnum.INGAME) {
             event.setCancelled(true);
@@ -27,7 +27,7 @@ public class BlockPlaceListener implements Listener {
         Player player = event.getPlayer();
         GamePlayer gamePlayer = this.forceItemBattle.getTeamManager().getGamePlayer(player.getUniqueId());
 
-        if (gamePlayer.isSpectator()) {
+        if (gamePlayer == null || gamePlayer.isSpectator()) {
             event.setCancelled(true);
             return;
         }

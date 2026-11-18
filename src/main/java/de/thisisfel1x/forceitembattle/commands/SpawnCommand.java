@@ -9,6 +9,7 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 public class SpawnCommand implements BasicCommand {
@@ -22,13 +23,13 @@ public class SpawnCommand implements BasicCommand {
     @Override
     public void execute(CommandSourceStack source, String[] args) {
         if (!(source.getSender() instanceof Player player)) {
-            source.getSender().sendMessage(Component.text("Dieser Befehl ist nur für Spieler.", NamedTextColor.RED));
+            source.getSender().sendMessage(Component.text("Dieser Befehl ist nur für Spieler", NamedTextColor.RED));
             return;
         }
 
         GameManager gameManager = forceItemBattle.getGameManager();
         if (gameManager.getCurrentGameState().getGameStateEnum() != GameStateEnum.INGAME) {
-            player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Dieser Befehel kann nur während dem Spiel ausgeführt werden!", NamedTextColor.RED)));
+            player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Dieser Befehl kann nur während dem Spiel ausgeführt werden!", NamedTextColor.RED)));
             return;
         }
 
@@ -38,7 +39,9 @@ public class SpawnCommand implements BasicCommand {
             return;
         }
 
-        Location spawnLocation = player.getWorld().getHighestBlockAt(player.getWorld().getSpawnLocation())
+        // Always the overworld spawn, also when the player is in the Nether or the End
+        World mainWorld = this.forceItemBattle.getMainWorld();
+        Location spawnLocation = mainWorld.getHighestBlockAt(mainWorld.getSpawnLocation())
                 .getLocation().toCenterLocation().add(0, 0.5, 0);
         player.teleport(spawnLocation);
 

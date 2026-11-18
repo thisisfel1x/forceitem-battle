@@ -1,7 +1,13 @@
 package de.thisisfel1x.forceitembattle;
 
-import de.thisisfel1x.forceitembattle.commands.*;
+import de.thisisfel1x.forceitembattle.commands.BackPackCommand;
+import de.thisisfel1x.forceitembattle.commands.RecipeCommand;
+import de.thisisfel1x.forceitembattle.commands.SpawnCommand;
+import de.thisisfel1x.forceitembattle.commands.StartCommand;
+import de.thisisfel1x.forceitembattle.commands.TopCommand;
 import de.thisisfel1x.forceitembattle.game.GameManager;
+import de.thisisfel1x.forceitembattle.game.ItemTracker;
+import de.thisisfel1x.forceitembattle.gui.GuiListener;
 import de.thisisfel1x.forceitembattle.gui.SettingsInventory;
 import de.thisisfel1x.forceitembattle.gui.SpectatorPlayerInventory;
 import de.thisisfel1x.forceitembattle.gui.TeamSelectorInventory;
@@ -9,11 +15,22 @@ import de.thisisfel1x.forceitembattle.listeners.block.BlockBreakListener;
 import de.thisisfel1x.forceitembattle.listeners.block.BlockPlaceListener;
 import de.thisisfel1x.forceitembattle.listeners.entity.EntityDamageListener;
 import de.thisisfel1x.forceitembattle.listeners.entity.EntityExhaustionListener;
-import de.thisisfel1x.forceitembattle.listeners.player.*;
+import de.thisisfel1x.forceitembattle.listeners.player.DropItemListener;
+import de.thisisfel1x.forceitembattle.listeners.player.FoodLevelChangeListener;
+import de.thisisfel1x.forceitembattle.listeners.player.InteractListener;
+import de.thisisfel1x.forceitembattle.listeners.player.InventoryClickListener;
+import de.thisisfel1x.forceitembattle.listeners.player.ItemFoundListener;
+import de.thisisfel1x.forceitembattle.listeners.player.JoinListener;
+import de.thisisfel1x.forceitembattle.listeners.player.PlayerChangedWorldListener;
+import de.thisisfel1x.forceitembattle.listeners.player.PlayerMoveListener;
+import de.thisisfel1x.forceitembattle.listeners.player.QuitListener;
+import de.thisisfel1x.forceitembattle.listeners.player.SpectatorListener;
 import de.thisisfel1x.forceitembattle.settings.SettingsManager;
 import de.thisisfel1x.forceitembattle.teams.TeamManager;
 import de.thisisfel1x.forceitembattle.utils.ForceItemBattleScoreboardManager;
+import de.thisisfel1x.forceitembattle.utils.IconManager;
 import de.thisisfel1x.forceitembattle.utils.ItemRegistry;
+import de.thisisfel1x.forceitembattle.utils.ResourcePackService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -22,16 +39,13 @@ import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
 import net.megavex.scoreboardlibrary.api.exception.NoPacketAdapterAvailableException;
 import net.megavex.scoreboardlibrary.api.noop.NoopScoreboardLibrary;
 import org.bukkit.Bukkit;
-import org.bukkit.GameRule;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.GameRules;
+import org.bukkit.World;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.File;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 
 public final class ForceItemBattle extends JavaPlugin {
 
@@ -43,12 +57,14 @@ public final class ForceItemBattle extends JavaPlugin {
     // Managers
     private GameManager gameManager;
     private TeamManager teamManager;
+    private ItemTracker itemTracker;
+
+    private ResourcePackService resourcePackService;
+    private IconManager iconManager;
 
     private ScoreboardLibrary scoreboardLibrary;
     private ForceItemBattleScoreboardManager forceItemBattleScoreboardManager;
     private SettingsManager settingsManager;
-
-    private final Map<String, String> textureMap = new HashMap<>();
 
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
 
@@ -61,19 +77,25 @@ public final class ForceItemBattle extends JavaPlugin {
     public void onEnable() {
         instance = this;
 
-        this.loadTextureMap();
+        this.saveDefaultConfig();
 
-        ItemRegistry.initialize();
+        this.resourcePackService = new ResourcePackService(this);
+        this.iconManager = new IconManager(this);
+        this.iconManager.loadIcons(this.resourcePackService.isEnabled());
+
+        ItemRegistry.initialize(this.getConfig().getStringList("items.additional-banned"), this.getLogger());
+        this.warnAboutMissingIcons();
 
         try {
             this.scoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(this);
         } catch (NoPacketAdapterAvailableException ignored) {
             this.scoreboardLibrary = new NoopScoreboardLibrary();
-            this.getLogger().warning("No scoreboard packet adapter available!");
+            this.getLogger().warning("No scoreboard packet adapter available for this server version");
         }
         this.forceItemBattleScoreboardManager = new ForceItemBattleScoreboardManager(this);
 
         this.teamManager = new TeamManager(this);
+        this.itemTracker = new ItemTracker(this);
         this.gameManager = new GameManager(this);
         this.settingsManager = new SettingsManager(this);
 
@@ -85,9 +107,9 @@ public final class ForceItemBattle extends JavaPlugin {
         this.registerCommands();
 
         Bukkit.getWorlds().forEach(world -> {
-            world.setGameRule(GameRule.KEEP_INVENTORY, true);
-            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-            world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+            world.setGameRule(GameRules.KEEP_INVENTORY, true);
+            world.setGameRule(GameRules.ADVANCE_TIME, false);
+            world.setGameRule(GameRules.ADVANCE_WEATHER, false);
         });
     }
 
@@ -97,11 +119,35 @@ public final class ForceItemBattle extends JavaPlugin {
             this.forceItemBattleScoreboardManager.cleanup();
         }
 
-        this.scoreboardLibrary.close();
+        if (this.scoreboardLibrary != null) {
+            this.scoreboardLibrary.close();
+        }
+    }
+
+    /**
+     * The icons are rendered for a specific Minecraft version (tools/icon-exporter). Items that were
+     * added to the game afterwards have no icon and are shown by name only.
+     */
+    private void warnAboutMissingIcons() {
+        if (!this.iconManager.isLoaded()) return;
+
+        List<String> missing = ItemRegistry.getFindableMaterials().stream()
+                .filter(material -> !this.iconManager.hasIcon(material))
+                .map(material -> material.name().toLowerCase(Locale.ROOT))
+                .sorted()
+                .toList();
+
+        if (!missing.isEmpty()) {
+            this.getLogger().warning(missing.size() + " items in the pool have no icon in the resource pack "
+                    + "and are shown by name only: " + String.join(", ", missing));
+        }
     }
 
     private void registerListeners() {
         PluginManager pluginManager = this.getServer().getPluginManager();
+
+        // GUI
+        pluginManager.registerEvents(new GuiListener(), this);
 
         // ENTITY
         pluginManager.registerEvents(new EntityDamageListener(this), this);
@@ -117,6 +163,7 @@ public final class ForceItemBattle extends JavaPlugin {
         pluginManager.registerEvents(new PlayerMoveListener(this), this);
         pluginManager.registerEvents(new DropItemListener(this), this);
         pluginManager.registerEvents(new PlayerChangedWorldListener(this), this);
+        pluginManager.registerEvents(new SpectatorListener(this), this);
 
         // BLOCK
         pluginManager.registerEvents(new BlockBreakListener(this), this);
@@ -145,22 +192,11 @@ public final class ForceItemBattle extends JavaPlugin {
         return miniMessage;
     }
 
-    private void loadTextureMap() {
-        File configFile = new File(getDataFolder(), "texture_map.yml");
-        if (!configFile.exists()) {
-            saveResource("texture_map.yml", false);
-        }
-
-        FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
-        for (String key : config.getKeys(false)) {
-            textureMap.put(key, config.getString(key));
-        }
-        getLogger().info(textureMap.size() + " Textur-Mappings wurden erfolgreich geladen.");
-    }
-
-    // Getter, damit andere Klassen darauf zugreifen können
-    public Map<String, String> getTextureMap() {
-        return textureMap;
+    /**
+     * The primary (overworld) world of the server, independent of its configured name.
+     */
+    public World getMainWorld() {
+        return Bukkit.getWorlds().getFirst();
     }
 
     public GameManager getGameManager() {
@@ -169,6 +205,18 @@ public final class ForceItemBattle extends JavaPlugin {
 
     public TeamManager getTeamManager() {
         return teamManager;
+    }
+
+    public ItemTracker getItemTracker() {
+        return itemTracker;
+    }
+
+    public ResourcePackService getResourcePackService() {
+        return resourcePackService;
+    }
+
+    public IconManager getIconManager() {
+        return iconManager;
     }
 
     public SettingsManager getSettingsManager() {

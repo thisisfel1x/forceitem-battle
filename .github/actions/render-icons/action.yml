@@ -1,0 +1,35 @@
+name: Render item icons
+description: >
+  Renders every item of the Minecraft version in tools/icon-exporter/gradle.properties with the real game
+  client - headless on a virtual display (xvfb) with Mesa software rendering - into resourcepack/icons.
+  Java 25 and Gradle have to be set up before. Uploads the preview screenshots and logs as artifact.
+
+inputs:
+  artifact-name:
+    description: Name of the artifact with preview screenshots and logs
+    default: icon-preview
+
+runs:
+  using: composite
+  steps:
+    - name: Set up virtual display
+      uses: ./.github/actions/virtual-display
+
+    - name: Render item icons
+      shell: bash
+      env:
+        LIBGL_ALWAYS_SOFTWARE: '1'
+      run: |
+        chmod +x gradlew
+        xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" \
+          ./gradlew -p tools/icon-exporter runClientGameTest --no-daemon
+
+    - name: Upload preview and logs
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: |
+          tools/icon-exporter/build/icon-preview
+          tools/icon-exporter/build/run/clientGameTest/logs
+        if-no-files-found: warn

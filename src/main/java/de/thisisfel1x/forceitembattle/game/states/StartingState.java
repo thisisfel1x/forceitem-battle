@@ -5,7 +5,6 @@ import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.game.GameState;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
-import de.thisisfel1x.forceitembattle.teams.ForceItemBattleTeam;
 import io.papermc.paper.registry.keys.SoundEventKeys;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
@@ -14,7 +13,7 @@ import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
-import org.bukkit.GameRule;
+import org.bukkit.GameRules;
 
 import java.time.Duration;
 
@@ -34,14 +33,22 @@ public class StartingState extends GameState {
     @Override
     public void onEnter() {
         this.forceItemBattle.getTeamManager().assignAllPlayersWithoutTeam();
-        this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::cleanOnJoin);
-        this.forceItemBattle.getTeamManager().getGamePlayers().values().forEach(GamePlayer::addEffectsForGame);
-        this.forceItemBattle.getTeamManager().getTeams().forEach(ForceItemBattleTeam::addJokersToInventory);
+        this.forceItemBattle.getTeamManager().getGamePlayers().values().stream()
+                .filter(GamePlayer::isPlayer)
+                .forEach(gamePlayer -> {
+                    gamePlayer.cleanOnJoin();
+                    gamePlayer.addEffectsForGame();
+                });
+
+        int jokerAmount = this.forceItemBattle.getJokerAmount();
+        boolean jokersPerTeam = this.forceItemBattle.getConfig().getBoolean("jokers.per-team", true);
+        this.forceItemBattle.getTeamManager().getTeams()
+                .forEach(team -> team.addJokersToInventory(jokerAmount, jokersPerTeam));
 
         // World specific modifications
         Bukkit.getWorlds().forEach(world -> {
-            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, true);
-            world.setGameRule(GameRule.DO_WEATHER_CYCLE, true);
+            world.setGameRule(GameRules.ADVANCE_TIME, true);
+            world.setGameRule(GameRules.ADVANCE_WEATHER, true);
         });
 
         this.taskId = this.forceItemBattle.getServer().getScheduler().scheduleSyncRepeatingTask(this.forceItemBattle, () -> {
@@ -86,7 +93,7 @@ public class StartingState extends GameState {
 
     @Override
     public void onLeave() {
-
+        this.forceItemBattle.getServer().getScheduler().cancelTask(this.taskId);
     }
 
     @Override

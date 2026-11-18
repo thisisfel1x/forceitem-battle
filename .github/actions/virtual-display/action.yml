@@ -1,0 +1,14 @@
+name: Virtual display
+description: >
+  Installs xvfb and Mesa software rendering, so the Minecraft client (icon exporter) runs
+  without a GPU. Run the client with: LIBGL_ALWAYS_SOFTWARE=1 xvfb-run --auto-servernum
+  --server-args="-screen 0 2560x1440x24" <command>
+
+runs:
+  using: composite
+  steps:
+    - name: Install virtual display and software rendering
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libvulkan1 mesa-vulkan-drivers

@@ -1,50 +1,146 @@
-# .github/workflows/release.yml
+name: Release
 
-name: Build and Release
-
+# Publishes a release to GitHub and Modrinth. The GitHub release contains the plugin jar and the resource pack
+# zip - the plugin downloads the pack from exactly this release by default (URL and SHA-1 are baked into the jar).
+# One jar supports every version in gradle.properties -> supportedVersions, all of them are listed on Modrinth.
+#
+# Triggers:
+#   - a pushed version tag:
+#       1. set the new version in gradle.properties (e.g. version=1.1.0) and merge it to master
+#       2. git tag v1.1.0 && git push origin v1.1.0
+#   - a merged pull request of the "New Minecraft version" workflow (branch minecraft/<version>): the tag
+#     v<version from gradle.properties> is created automatically
+#
+# Before publishing, build.yml renders the item icons, builds and verifies the commit (compatibility + smoke test
+# for every supported version) - the released files are exactly the files it built.
+# Versions with a suffix (e.g. 1.2.0-beta.1) are published as pre-release / beta
 on:
   push:
+    tags:
+      - 'v*'
+  pull_request:
+    types: [closed]
     branches:
       - master
 
-jobs:
-  build-release:
-    runs-on: ubuntu-latest
+permissions:
+  contents: write
 
-    permissions:
-      contents: write
+jobs:
+  prepare:
+    name: Resolve version
+    if: >-
+      github.event_name == 'push' ||
+      (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'minecraft/'))
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.version.outputs.sha }}
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      channel: ${{ steps.version.outputs.channel }}
+      game-versions: ${{ steps.version.outputs.game-versions }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetches all history for the commit SHA
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+          fetch-depth: 0
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      - name: Check Modrinth configuration
+        env:
+          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          MODRINTH_TOKEN_SET: ${{ secrets.MODRINTH_TOKEN != '' }}
+        run: |
+          if [ -z "$MODRINTH_PROJECT_ID" ]; then
+            echo "::error::Repository variable MODRINTH_PROJECT_ID is not set (Settings -> Secrets and variables -> Actions -> Variables)"
+            exit 1
+          fi
+          if [ "$MODRINTH_TOKEN_SET" != "true" ]; then
+            echo "::error::Repository secret MODRINTH_TOKEN is not set (Settings -> Secrets and variables -> Actions -> Secrets)"
+            exit 1
+          fi
+
+      - name: Resolve version
+        id: version
+        run: |
+          PROJECT_VERSION="$(grep -E '^version=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]')"
+
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            TAG="$GITHUB_REF_NAME"
+            if [ "${TAG#v}" != "$PROJECT_VERSION" ]; then
+              echo "::error::Tag $TAG does not match version=$PROJECT_VERSION in gradle.properties"
+              exit 1
+            fi
+          else
+            TAG="v$PROJECT_VERSION"
+            if git rev-parse -q --verify "refs/tags/$TAG" > /dev/null; then
+              echo "::error::Tag $TAG already exists - bump the version in gradle.properties and tag manually"
+              exit 1
+            fi
+          fi
+
+          {
+            echo "sha=$(git rev-parse HEAD)"
+            echo "tag=$TAG"
+            echo "version=$PROJECT_VERSION"
+            if [[ "$PROJECT_VERSION" == *-* ]]; then
+              echo "prerelease=true"
+              echo "channel=beta"
+            else
+              echo "prerelease=false"
+              echo "channel=release"
+            fi
+            echo "game-versions<<EOF"
+            grep -E '^supportedVersions=' gradle.properties | cut -d'=' -f2 | tr -d '[:space:]' | tr ',' '\n'
+            echo
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  verify:
+    name: Verify
+    needs: prepare
+    uses: ./.github/workflows/build.yml
+    with:
+      ref: ${{ needs.prepare.outputs.sha }}
+
+  publish:
+    name: Publish
+    needs: [prepare, verify]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download verified build
+        uses: actions/download-artifact@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Build with Gradle
-        run: ./gradlew shadowJar
-
-      - name: Get Commit SHA
-        id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          name: forceitem-battle
+          path: build/libs
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.vars.outputs.sha_short }}
-          name: "Release ${{ steps.vars.outputs.sha_short }}"
-          prerelease: false
-          files: build/libs/forceitem-battle-1.0-SNAPSHOT-all.jar
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          target_commitish: ${{ needs.prepare.outputs.sha }}
+          name: 'ForceItemBattle ${{ needs.prepare.outputs.version }}'
+          prerelease: ${{ needs.prepare.outputs.prerelease }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            build/libs/forceitem-battle-${{ needs.prepare.outputs.version }}.jar
+            build/libs/forceitem-battle-pack-${{ needs.prepare.outputs.version }}.zip
+
+      - name: Upload to Modrinth
+        uses: cloudnode-pro/modrinth-publish@v2
+        with:
+          token: ${{ secrets.MODRINTH_TOKEN }}
+          project: ${{ vars.MODRINTH_PROJECT_ID }}
+          name: 'ForceItemBattle ${{ needs.prepare.outputs.version }}'
+          version: ${{ needs.prepare.outputs.version }}
+          channel: ${{ needs.prepare.outputs.channel }}
+          changelog: 'https://github.com/${{ github.repository }}/releases/tag/${{ needs.prepare.outputs.tag }}'
+          loaders: |-
+            paper
+          game-versions: |-
+            ${{ needs.prepare.outputs.game-versions }}
+          files: build/libs/forceitem-battle-${{ needs.prepare.outputs.version }}.jar

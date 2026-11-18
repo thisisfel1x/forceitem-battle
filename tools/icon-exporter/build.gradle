@@ -1,0 +1,50 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+version = '1.0.0'
+group = 'de.thisisfel1x'
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+fabricApi {
+    configureTests {
+        // Only the client gametest (= the exporter) is needed, no server gametests and therefore no EULA
+        enableGameTests = false
+        enableClientGameTests = true
+    }
+}
+
+// Paths are relative to the repository root, so the export lands directly in the plugin's resource pack sources
+def repositoryRoot = rootDir.parentFile.parentFile
+
+loom.runs.matching { it.name == 'clientGameTest' }.configureEach {
+    vmArg "-Dfib.icons.dir=${new File(repositoryRoot, 'resourcepack/icons').absolutePath}"
+    vmArg "-Dfib.icons.manifest=${new File(repositoryRoot, 'resourcepack/icons.json').absolutePath}"
+    vmArg "-Dfib.icons.preview=${layout.buildDirectory.dir('icon-preview').get().asFile.absolutePath}"
+    vmArg "-Dfib.icons.scale=${project.findProperty('iconScale') ?: 4}"
+    vmArg "-Dfib.icons.previewSize=${project.findProperty('previewIconSize') ?: 32}"
+    // Known issue of client gametests on GitHub Actions (see Fabric docs "Automatic Testing")
+    vmArg '-Dfabric.client.gametest.disableNetworkSynchronizer=true'
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 25
+}
+
+processResources {
+    def props = [version: project.version, minecraftVersion: project.minecraft_version]
+    inputs.properties props
+    filesMatching('fabric.mod.json') {
+        expand props
+    }
+}

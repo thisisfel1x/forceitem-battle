@@ -4,6 +4,7 @@ import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
+import de.thisisfel1x.forceitembattle.settings.SettingType;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
@@ -21,7 +22,7 @@ public class BackPackCommand implements BasicCommand {
     @Override
     public void execute(CommandSourceStack source, String[] args) {
         if (!(source.getSender() instanceof Player player)) {
-            source.getSender().sendMessage(Component.text("Dieser Befehl ist nur für Spieler.", NamedTextColor.RED));
+            source.getSender().sendMessage(Component.text("Dieser Befehl ist nur für Spieler", NamedTextColor.RED));
             return;
         }
 
@@ -31,13 +32,13 @@ public class BackPackCommand implements BasicCommand {
             return;
         }
 
-        if (!((boolean) this.forceItemBattle.getSettingsManager().getSetting("BACKPACK").getValue())) {
+        if (!this.forceItemBattle.getSettingsManager().isEnabled(SettingType.BACKPACK)) {
             player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Der Backpack ist deaktiviert", NamedTextColor.RED)));
             return;
         }
 
         GamePlayer gamePlayer = forceItemBattle.getTeamManager().getGamePlayer(player.getUniqueId());
-        if (gamePlayer == null || !gamePlayer.isInTeam()) {
+        if (gamePlayer == null || gamePlayer.isSpectator() || !gamePlayer.isInTeam()) {
             player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Du bist in keinem Team!", NamedTextColor.RED)));
             return;
         }

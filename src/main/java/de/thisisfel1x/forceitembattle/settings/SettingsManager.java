@@ -1,54 +1,51 @@
 package de.thisisfel1x.forceitembattle.settings;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
-import de.thisisfel1x.forceitembattle.settings.impl.BackpackSetting;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.Map;
 
 public class SettingsManager {
 
     private final ForceItemBattle forceItemBattle;
-    private final List<AbstractSetting<?>> settings = new ArrayList<>();
-    private final Map<String, AbstractSetting<?>> settingsMap = new HashMap<>();
+    // EnumMap iterates in declaration order of SettingType - the order of the settings GUI
+    private final Map<SettingType, AbstractSetting<?>> settings = new EnumMap<>(SettingType.class);
 
     public SettingsManager(ForceItemBattle forceItemBattle) {
         this.forceItemBattle = forceItemBattle;
-        registerAllSettings();
-    }
 
-    private void registerAllSettings() {
-        addSetting(new BackpackSetting());
-    }
-
-    private void addSetting(AbstractSetting<?> setting) {
-        this.settings.add(setting);
-        this.settingsMap.put(setting.getKey(), setting);
-    }
-
-
-    public List<AbstractSetting<?>> getSettings() {
-        return this.settings;
-    }
-
-
-    public AbstractSetting<?> getSetting(String name) {
-        return this.settingsMap.get(name);
-    }
-
-
-    public void applyAllGameSettings() {
-        for (AbstractSetting<?> setting : settings) {
-            setting.applyEffect(forceItemBattle);
+        for (SettingType type : SettingType.values()) {
+            this.settings.put(type, type.create());
         }
     }
 
+    public Collection<AbstractSetting<?>> getSettings() {
+        return Collections.unmodifiableCollection(this.settings.values());
+    }
+
+    public AbstractSetting<?> getSetting(SettingType type) {
+        return this.settings.get(type);
+    }
+
+    /**
+     * @return the value of a boolean setting, {@code false} if the setting is not a boolean setting
+     */
+    public boolean isEnabled(SettingType type) {
+        return this.settings.get(type) instanceof BooleanSetting booleanSetting
+                && Boolean.TRUE.equals(booleanSetting.getValue());
+    }
+
+    public void applyAllGameSettings() {
+        for (AbstractSetting<?> setting : this.settings.values()) {
+            setting.applyEffect(this.forceItemBattle);
+        }
+    }
 
     public void removeAllGameSettings() {
-        for (AbstractSetting<?> setting : settings) {
-            setting.removeEffect(forceItemBattle);
+        for (AbstractSetting<?> setting : this.settings.values()) {
+            setting.removeEffect(this.forceItemBattle);
         }
     }
 }

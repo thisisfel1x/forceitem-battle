@@ -29,7 +29,7 @@ public class FoodLevelChangeListener implements Listener {
         Player player = (Player) event.getEntity();
         GamePlayer gamePlayer = this.forceItemBattle.getTeamManager().getGamePlayer(player.getUniqueId());
 
-        if (gamePlayer.isSpectator()) {
+        if (gamePlayer == null || gamePlayer.isSpectator()) {
             event.setCancelled(true);
             return;
         }

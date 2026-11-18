@@ -1,24 +1,41 @@
 package de.thisisfel1x.forceitembattle.listeners.entity;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
+import de.thisisfel1x.forceitembattle.game.GameStateEnum;
+import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityExhaustionEvent;
 
+/**
+ * Exhaustion drains saturation and then the food bar. It is only allowed for active players during the game and
+ * only if {@code hunger.enabled} is set in the config - otherwise the food bar stays full.
+ */
 public class EntityExhaustionListener implements Listener {
 
     private final ForceItemBattle forceItemBattle;
+    private final boolean hungerEnabled;
 
     public EntityExhaustionListener(ForceItemBattle forceItemBattle) {
         this.forceItemBattle = forceItemBattle;
+        this.hungerEnabled = forceItemBattle.getConfig().getBoolean("hunger.enabled", false);
     }
 
     @EventHandler
     public void onEntityExhaustion(EntityExhaustionEvent event) {
-        if(!(event.getEntity() instanceof Player player)) return;
+        if (!(event.getEntity() instanceof Player player)) return;
 
-        event.setCancelled(true);
+        if (!this.hungerEnabled
+                || this.forceItemBattle.getGameManager().getCurrentGameState().getGameStateEnum() != GameStateEnum.INGAME) {
+            event.setCancelled(true);
+            return;
+        }
+
+        GamePlayer gamePlayer = this.forceItemBattle.getTeamManager().getGamePlayer(player.getUniqueId());
+        if (gamePlayer == null || gamePlayer.isSpectator()) {
+            event.setCancelled(true);
+        }
     }
 
 }

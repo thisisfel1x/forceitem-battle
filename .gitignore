@@ -261,3 +261,12 @@ gradle-app.setting
 *.hprof
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij,jetbrains,gradle,java,maven
+
+### Python ###
+__pycache__/
+
+### Item icons ###
+# Rendered from the Minecraft client by tools/icon-exporter (in CI before every build) - generated and derived
+# from Mojang's textures, so they are not part of the repository
+resourcepack/icons/
+resourcepack/icons.json
