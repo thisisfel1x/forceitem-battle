@@ -126,6 +126,7 @@ On first start the plugin creates `plugins/forceitem-battle/config.yml`:
 | `teams.amount`                       | `14`    | Number of teams (max. 18)                                                                           |
 | `teams.size`                         | `2`     | Players per team                                                                                    |
 | `jokers.per-team`                    | `true`  | `true`: joker amount is given once per team, `false`: every team member gets the full amount        |
+| `hunger.enabled`                     | `false` | Players lose hunger during the game. `false`: the food bar stays full                               |
 | `scoreboard.show-ranking-ingame`     | `false` | Show the live ranking in the sidebar during the game                                                |
 | `results.shutdown-server`            | `true`  | Stop the server after the results                                                                   |
 | `results.shutdown-delay-seconds`     | `20`    | Countdown before the server stops                                                                   |

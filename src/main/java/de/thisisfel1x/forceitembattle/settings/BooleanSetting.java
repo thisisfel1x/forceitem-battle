@@ -16,8 +16,8 @@ import java.util.List;
 
 public abstract class BooleanSetting extends AbstractSetting<Boolean> {
 
-    public BooleanSetting(String key, Component name, List<Component> description, Material iconMaterial, Boolean defaultValue) {
-        super(key, name, description, iconMaterial, defaultValue);
+    public BooleanSetting(Component name, List<Component> description, Material iconMaterial, Boolean defaultValue) {
+        super(name, description, iconMaterial, defaultValue);
     }
 
     @Override

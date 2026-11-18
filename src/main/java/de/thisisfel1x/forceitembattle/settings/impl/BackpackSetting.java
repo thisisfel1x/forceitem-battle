@@ -12,7 +12,6 @@ public class BackpackSetting extends BooleanSetting {
 
     public BackpackSetting() {
         super(
-                "BACKPACK",
                 Component.text("Backpack"),
                 List.of(
                         Component.text("Wenn aktiv kann der Backpack verwendet werden", NamedTextColor.GRAY)

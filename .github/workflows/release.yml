@@ -13,7 +13,7 @@ name: Release
 #
 # Before publishing, build.yml renders the item icons, builds and verifies the commit (compatibility + smoke test
 # for every supported version) - the released files are exactly the files it built.
-# Versions with a suffix (e.g. 1.2.0-beta.1) are published as pre-release / beta.
+# Versions with a suffix (e.g. 1.2.0-beta.1) are published as pre-release / beta
 on:
   push:
     tags:
@@ -25,9 +25,6 @@ on:
 
 permissions:
   contents: write
-
-env:
-  MODRINTH_PROJECT: 'awKBElnR'
 
 jobs:
   prepare:
@@ -50,6 +47,20 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
           fetch-depth: 0
+
+      - name: Check Modrinth configuration
+        env:
+          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          MODRINTH_TOKEN_SET: ${{ secrets.MODRINTH_TOKEN != '' }}
+        run: |
+          if [ -z "$MODRINTH_PROJECT_ID" ]; then
+            echo "::error::Repository variable MODRINTH_PROJECT_ID is not set (Settings -> Secrets and variables -> Actions -> Variables)"
+            exit 1
+          fi
+          if [ "$MODRINTH_TOKEN_SET" != "true" ]; then
+            echo "::error::Repository secret MODRINTH_TOKEN is not set (Settings -> Secrets and variables -> Actions -> Secrets)"
+            exit 1
+          fi
 
       - name: Resolve version
         id: version
@@ -123,7 +134,7 @@ jobs:
         uses: cloudnode-pro/modrinth-publish@v2
         with:
           token: ${{ secrets.MODRINTH_TOKEN }}
-          project: ${{ env.MODRINTH_PROJECT }}
+          project: ${{ vars.MODRINTH_PROJECT_ID }}
           name: 'ForceItemBattle ${{ needs.prepare.outputs.version }}'
           version: ${{ needs.prepare.outputs.version }}
           channel: ${{ needs.prepare.outputs.channel }}

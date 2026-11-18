@@ -4,6 +4,7 @@ import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
+import de.thisisfel1x.forceitembattle.settings.SettingType;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
@@ -31,7 +32,7 @@ public class BackPackCommand implements BasicCommand {
             return;
         }
 
-        if (!this.forceItemBattle.getSettingsManager().isEnabled("BACKPACK")) {
+        if (!this.forceItemBattle.getSettingsManager().isEnabled(SettingType.BACKPACK)) {
             player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Der Backpack ist deaktiviert", NamedTextColor.RED)));
             return;
         }

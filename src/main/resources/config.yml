@@ -25,6 +25,11 @@ jokers:
   # false: every team member receives the full joker amount
   per-team: true
 
+hunger:
+  # Players lose hunger while the game is running
+  # false: the food bar stays full the whole game
+  enabled: false
+
 scoreboard:
   # Show the live team ranking in the sidebar while the game is running
   show-ranking-ingame: false
