@@ -24,8 +24,9 @@ class BiomeSizeDatapackTest {
 
     @Test
     void normalIsVanilla() {
-        assertEquals(-10, BiomeSize.NORMAL.temperatureFirstOctave());
-        assertEquals(-8, BiomeSize.NORMAL.vegetationFirstOctave());
+        assertEquals(-10, BiomeSize.NORMAL.firstOctave(OverworldNoise.TEMPERATURE));
+        assertEquals(-8, BiomeSize.NORMAL.firstOctave(OverworldNoise.VEGETATION));
+        assertEquals(-9, BiomeSize.NORMAL.firstOctave(OverworldNoise.CONTINENTALNESS));
         assertTrue(BiomeSize.NORMAL.isVanilla());
     }
 
@@ -33,14 +34,33 @@ class BiomeSizeDatapackTest {
     void smallerBiomesRaiseTheFirstOctave() throws IOException {
         BiomeSizeDatapack.write(this.directory, BiomeSize.TINY);
 
+        assertEquals(-8, this.read("data/minecraft/worldgen/noise/temperature.json").get("firstOctave").getAsInt());
+        assertEquals(-6, this.read("data/minecraft/worldgen/noise/vegetation.json").get("firstOctave").getAsInt());
+        assertEquals(-7, this.read("data/minecraft/worldgen/noise/continentalness.json").get("firstOctave").getAsInt(),
+                "oceans shrink along with the biomes");
+    }
+
+    @Test
+    void writesTheFormatUpTo26_2() throws IOException {
+        BiomeSizeDatapack.write(this.directory, BiomeSize.SMALL);
+
         JsonObject temperature = this.read("data/minecraft/worldgen/noise/temperature.json");
-        assertEquals(-8, temperature.get("firstOctave").getAsInt());
-        assertEquals(-8, temperature.get("base_octave").getAsInt(), "name since Minecraft 26.1");
+        assertEquals(-9, temperature.get("firstOctave").getAsInt());
         assertEquals(6, temperature.getAsJsonArray("amplitudes").size());
         assertEquals(1.5, temperature.getAsJsonArray("amplitudes").get(0).getAsDouble());
+    }
 
-        JsonObject vegetation = this.read("data/minecraft/worldgen/noise/vegetation.json");
-        assertEquals(-6, vegetation.get("firstOctave").getAsInt());
+    @Test
+    void writesTheFormatSince26_3() throws IOException {
+        BiomeSizeDatapack.write(this.directory, BiomeSize.SMALL);
+
+        // Vanilla 26.3 continentalness.json with base_octave -9
+        JsonObject continentalness = this.read("data/minecraft/worldgen/noise/continentalness.json");
+        assertEquals(-8, continentalness.get("base_octave").getAsInt());
+        assertEquals(0.8880832896205223, continentalness.get("base_amplitude").getAsDouble());
+        assertEquals(9, continentalness.get("octave_count").getAsInt());
+        assertEquals(9, continentalness.getAsJsonArray("amplitude_modifiers").size());
+        assertEquals(2.0, continentalness.getAsJsonArray("amplitude_modifiers").get(2).getAsDouble());
     }
 
     @Test

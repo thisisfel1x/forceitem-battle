@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Writes the data pack that overrides the temperature and vegetation noise of the overworld for a
+ * Writes the data pack that overrides the {@link OverworldNoise}s (temperature, vegetation, continentalness) for a
  * {@link BiomeSize}. Generated on every start, so it always matches the config
  */
 public final class BiomeSizeDatapack {
@@ -46,10 +46,10 @@ public final class BiomeSizeDatapack {
         Path noiseDirectory = directory.resolve("data/minecraft/worldgen/noise");
         Files.createDirectories(noiseDirectory);
         Files.writeString(directory.resolve("pack.mcmeta"), packMeta, StandardCharsets.UTF_8);
-        Files.writeString(noiseDirectory.resolve("temperature.json"),
-                noiseJson(biomeSize.temperatureFirstOctave(), BiomeSize.TEMPERATURE_AMPLITUDES), StandardCharsets.UTF_8);
-        Files.writeString(noiseDirectory.resolve("vegetation.json"),
-                noiseJson(biomeSize.vegetationFirstOctave(), BiomeSize.VEGETATION_AMPLITUDES), StandardCharsets.UTF_8);
+        for (OverworldNoise noise : OverworldNoise.values()) {
+            Files.writeString(noiseDirectory.resolve(noise.fileName() + ".json"),
+                    noiseJson(noise, biomeSize.firstOctave(noise)), StandardCharsets.UTF_8);
+        }
     }
 
     public static void delete(Path directory) throws IOException {
@@ -63,20 +63,26 @@ public final class BiomeSizeDatapack {
     }
 
     /**
-     * The first octave is written twice: Minecraft 26.x renamed {@code firstOctave} (1.21.x) to {@code base_octave}.
-     * Both versions ignore the field they do not know, so one file works for every supported version
+     * Writes the noise in both formats: up to 26.2 {@code firstOctave} and {@code amplitudes}, since 26.3
+     * {@code base_octave}, {@code base_amplitude}, {@code octave_count} and {@code amplitude_modifiers}.
+     * Every version ignores the fields of the other format, so one file works for every supported version
      */
-    static String noiseJson(int firstOctave, double[] amplitudes) {
+    static String noiseJson(OverworldNoise noise, int firstOctave) {
+        double[] amplitudes = noise.amplitudes();
         String amplitudeList = Arrays.stream(amplitudes)
                 .mapToObj(amplitude -> String.format(Locale.ROOT, "%.1f", amplitude))
                 .collect(Collectors.joining(", "));
         return """
                 {
                   "firstOctave": %d,
+                  "amplitudes": [%s],
                   "base_octave": %d,
-                  "amplitudes": [%s]
+                  "base_amplitude": %s,
+                  "octave_count": %d,
+                  "amplitude_modifiers": [%s]
                 }
-                """.formatted(firstOctave, firstOctave, amplitudeList);
+                """.formatted(firstOctave, amplitudeList, firstOctave, Double.toString(noise.baseAmplitude()),
+                amplitudes.length, amplitudeList);
     }
 
     private static Properties loadFormats() throws IOException {

@@ -13,7 +13,7 @@ language:
 world:
   # Size of the biomes: NORMAL (vanilla), SMALL (half as wide), TINY (a quarter as wide).
   # Smaller biomes put the biome specific items (cactus, cocoa beans, terracotta, ...) closer together.
-  # Only biomes get smaller - mountains, oceans and rivers stay like in vanilla.
+  # Oceans and continents shrink along with the biomes, mountains and rivers stay like in vanilla
   # Read on server start before the world is loaded and only applies to newly generated chunks:
   # use a new world after changing it, otherwise old and new chunks meet at hard edges
   biome-size: SMALL

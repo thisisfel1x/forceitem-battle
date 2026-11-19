@@ -178,8 +178,9 @@ terracotta can take a long walk. `world.biome-size` makes biomes smaller:
 | `SMALL`  | half (a quarter of the area)   |
 | `TINY`   | a quarter (1/16 of the area)   |
 
-Only the temperature and humidity noise of the overworld get a higher frequency - the two values that decide nothing
-but the biome. Terrain (continents, mountains, rivers) is generated like in vanilla, there are just more biomes on it.
+Three noises of the overworld get a higher frequency: temperature and humidity, which decide nothing but the biome,
+and continentalness, which decides where ocean and land are. So oceans and continents shrink along with the biomes and
+oceans do not take over the map. Mountains and rivers are generated like in vanilla.
 Technically the plugin registers a data pack before the world is loaded (Paper plugin bootstrap).
 
 * The option is read on server start and applies to **newly generated chunks** only. After changing it use a new world
