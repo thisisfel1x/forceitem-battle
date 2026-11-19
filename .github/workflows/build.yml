@@ -200,6 +200,8 @@ jobs:
       - name: Run server and two clients
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
+          # Minecraft 26.3+ asks SDL for an sRGB framebuffer - Xvfb has no such GLX visual, EGL (Mesa) has
+          SDL_VIDEO_FORCE_EGL: '1'
         run: |
           chmod +x gradlew
           PLUGIN_JAR="$(ls build/libs/forceitem-battle-*.jar | head -n 1)"

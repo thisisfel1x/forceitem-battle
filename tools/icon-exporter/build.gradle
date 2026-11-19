@@ -56,9 +56,8 @@ java {
     toolchain.languageVersion = JavaLanguageVersion.of(25)
 }
 
-// On CI Loom wraps the client in its own xvfb-run with the default screen (no 24 bit visual): OpenGL then fails with
-// "Couldn't find matching GLX visual" and the game falls back to Vulkan (lavapipe), which crashes on exit.
-// The workflows start Gradle inside xvfb-run with a 24 bit screen, the client uses that display
+// On CI Loom would wrap the client in a second xvfb-run with its default screen. The workflows already start Gradle
+// inside xvfb-run (24 bit screen, see .github/actions/virtual-display), the client uses that display
 tasks.withType(net.fabricmc.loom.task.AbstractRunTask).configureEach {
     useXvfb = false
 }

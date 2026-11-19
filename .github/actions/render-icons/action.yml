@@ -19,6 +19,8 @@ runs:
       shell: bash
       env:
         LIBGL_ALWAYS_SOFTWARE: '1'
+        # Minecraft 26.3+ asks SDL for an sRGB framebuffer - Xvfb has no such GLX visual, EGL (Mesa) has
+        SDL_VIDEO_FORCE_EGL: '1'
       run: |
         chmod +x gradlew
         xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" \
