@@ -10,5 +10,6 @@ runs:
     - name: Install virtual display and software rendering
       shell: bash
       run: |
-        sudo apt-get update
-        sudo apt-get install -y xvfb libgl1-mesa-dri libegl1 libvulkan1 mesa-vulkan-drivers
+        # Retries: the Ubuntu mirrors answer with 503 now and then
+        sudo apt-get -o Acquire::Retries=5 update
+        sudo apt-get -o Acquire::Retries=5 install -y xvfb libgl1-mesa-dri libegl1 libvulkan1 mesa-vulkan-drivers
