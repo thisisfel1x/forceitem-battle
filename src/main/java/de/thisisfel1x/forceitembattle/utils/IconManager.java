@@ -18,10 +18,10 @@ import java.util.logging.Level;
 /**
  * Item icons for text (boss bar, chat). Every icon is a sprite of the resource pack in the gui
  * atlas ({@code fib:icon/<item id>}) and is shown with a sprite object component - there is no
- * mapping to maintain, the item id is the sprite name.
+ * mapping to maintain, the item id is the sprite name
  *
  * <p>Which icons exist is generated at build time from {@code resourcepack/icons/}, an unknown
- * sprite would be rendered as the pink/black "missing texture" otherwise.
+ * sprite would be rendered as the pink/black "missing texture" otherwise
  */
 public class IconManager {
 

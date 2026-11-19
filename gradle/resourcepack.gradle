@@ -7,7 +7,7 @@ import java.nio.file.Files
 import java.security.MessageDigest
 
 /*
- * Builds the resource pack from resourcepack/ and bakes its SHA-1 and default URL into the plugin.
+ * Builds the resource pack from resourcepack/ and bakes its SHA-1 and default URL into the plugin
  *
  *   resourcepack/static/      hand made assets (scoreboard title glyphs, win model, ...) - copied as is
  *   resourcepack/icons/       <item id>.png rendered by tools/icon-exporter - not in the repository (derived from
@@ -16,9 +16,9 @@ import java.security.MessageDigest
  *
  * One pack serves all supported versions: pack.mcmeta declares the format range from gradle.properties
  * (resourcePackMinFormat..resourcePackMaxFormat). Items are never removed from the game, so the icons of
- * the newest version cover the older ones as well.
+ * the newest version cover the older ones as well
  *
- * Output: build/libs/forceitem-battle-pack-<version>.zip - attached to every GitHub release.
+ * Output: build/libs/forceitem-battle-pack-<version>.zip - attached to every GitHub release
  */
 
 def packSourceDir = layout.projectDirectory.dir('resourcepack').asFile
@@ -159,7 +159,7 @@ processResources {
 }
 
 /**
- * Box filter downscale with alpha weighting (transparent pixels do not darken the edges).
+ * Box filter downscale with alpha weighting (transparent pixels do not darken the edges)
  */
 static BufferedImage downscaleIcon(BufferedImage source, int targetSize) {
     int factor = Math.max(1, source.width.intdiv(targetSize))

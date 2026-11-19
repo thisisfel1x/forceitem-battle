@@ -1,10 +1,11 @@
 package de.thisisfel1x.forceitembattle.player;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
+import de.thisisfel1x.forceitembattle.i18n.LanguageManager;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import de.thisisfel1x.forceitembattle.teams.ForceItemBattleTeam;
 import de.thisisfel1x.forceitembattle.utils.Items;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -46,8 +47,11 @@ public class GamePlayer {
         this.forceItemBattleTeam = null;
     }
 
-    public void sendMessage(Component message) {
-        this.ifOnline(player -> player.sendMessage(message));
+    /**
+     * Sends the message in the player's language if it is online
+     */
+    public void sendMessage(Message message, TagResolver... placeholders) {
+        this.ifOnline(player -> ForceItemBattle.getInstance().getLanguageManager().send(player, message, placeholders));
     }
 
     public String getName() {
@@ -70,7 +74,7 @@ public class GamePlayer {
     }
 
     /**
-     * Runs the action only if the player is currently online.
+     * Runs the action only if the player is currently online
      */
     public void ifOnline(Consumer<Player> action) {
         Player player = this.getPlayer();
@@ -125,13 +129,14 @@ public class GamePlayer {
         this.ifOnline(player -> {
             player.getInventory().clear();
 
+            LanguageManager languageManager = ForceItemBattle.getInstance().getLanguageManager();
             ItemStack teamSelector = Items.named(Material.AMETHYST_SHARD,
-                    Component.text("Wähle dein Team", NamedTextColor.WHITE), true);
+                    languageManager.render(player, Message.LOBBY_ITEM_TEAM_SELECTOR), true);
             player.getInventory().setItem(0, teamSelector);
 
             if (player.hasPermission("forceitembattle.settings")) {
                 ItemStack settingsItem = Items.named(Material.PAPER,
-                        Component.text("Einstellungen", NamedTextColor.RED), true);
+                        languageManager.render(player, Message.LOBBY_ITEM_SETTINGS), true);
                 settingsItem.editMeta(itemMeta -> itemMeta.setItemModel(NamespacedKey.fromString("fib:win")));
                 player.getInventory().setItem(1, settingsItem);
             }
@@ -154,7 +159,7 @@ public class GamePlayer {
             }
 
             ItemStack playerCompass = Items.named(Material.COMPASS,
-                    Component.text("Spieler beobachten", NamedTextColor.WHITE));
+                    plugin.getLanguageManager().render(player, Message.SPECTATOR_ITEM_COMPASS));
             player.getInventory().setItem(0, playerCompass);
         });
     }
@@ -186,7 +191,7 @@ public class GamePlayer {
     }
 
     /**
-     * (Re-)spawns the armor stand above the player's head showing the team's current item.
+     * (Re-)spawns the armor stand above the player's head showing the team's current item
      */
     public void updateArmorstandItem() {
         if (this.isSpectator() || !this.isInTeam()) return;
@@ -208,7 +213,7 @@ public class GamePlayer {
     }
 
     /**
-     * Removes the item armor stand, e.g. when the player quits or the game ends.
+     * Removes the item armor stand, e.g. when the player quits or the game ends
      */
     public void removeArmorstand() {
         this.ifOnline(player -> player.getPassengers().forEach(passenger -> {

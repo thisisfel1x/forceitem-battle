@@ -3,14 +3,15 @@ package de.thisisfel1x.forceitembattle.commands;
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
+import de.thisisfel1x.forceitembattle.gui.SimpleGui;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import de.thisisfel1x.forceitembattle.teams.ForceItemBattleTeam;
-import de.thisisfel1x.forceitembattle.gui.SimpleGui;
 import de.thisisfel1x.forceitembattle.utils.Items;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -31,19 +32,19 @@ public class RecipeCommand implements BasicCommand {
     @Override
     public void execute(CommandSourceStack source, String[] args) {
         if (!(source.getSender() instanceof Player player)) {
-            source.getSender().sendMessage(Component.text("Dieser Befehl ist nur für Spieler", NamedTextColor.RED));
+            this.plugin.getLanguageManager().send(source.getSender(), Message.COMMAND_PLAYERS_ONLY);
             return;
         }
 
         GameManager gameManager = plugin.getGameManager();
         if (gameManager.getCurrentGameState().getGameStateEnum() != GameStateEnum.INGAME) {
-            player.sendMessage(plugin.getPrefix().append(Component.text("Du kannst Rezepte nur während des Spiels ansehen!", NamedTextColor.RED)));
+            this.plugin.getLanguageManager().send(player, Message.COMMAND_ONLY_INGAME);
             return;
         }
 
         GamePlayer gamePlayer = plugin.getTeamManager().getGamePlayer(player.getUniqueId());
         if (gamePlayer == null || gamePlayer.isSpectator() || !gamePlayer.isInTeam()) {
-            player.sendMessage(plugin.getPrefix().append(Component.text("Du bist in keinem Team!", NamedTextColor.RED)));
+            this.plugin.getLanguageManager().send(player, Message.COMMAND_NOT_IN_TEAM);
             return;
         }
 
@@ -52,11 +53,11 @@ public class RecipeCommand implements BasicCommand {
         List<Recipe> recipes = Bukkit.getRecipesFor(targetItem);
 
         if (recipes.isEmpty()) {
-            player.sendMessage(plugin.getPrefix().append(Component.text("Für dieses Item gibt es kein Herstellungsrezept", NamedTextColor.YELLOW)));
+            this.plugin.getLanguageManager().send(player, Message.RECIPE_NONE);
             return;
         }
 
-        // Bevorzuge ein Rezept für die Werkbank, da nur diese angezeigt werden können
+        // Prefer a crafting table recipe, only those can be shown
         Recipe recipe = recipes.stream()
                 .filter(candidate -> candidate instanceof ShapedRecipe || candidate instanceof ShapelessRecipe)
                 .findFirst()
@@ -65,17 +66,18 @@ public class RecipeCommand implements BasicCommand {
     }
 
     private void openRecipeInventory(Player player, ItemStack targetItem, Recipe recipe) {
-        Component title = Component.text("Rezept für: ").append(Component.translatable(targetItem.translationKey()));
+        Component title = this.plugin.getLanguageManager().render(player, Message.RECIPE_TITLE,
+                Placeholder.component("item", Component.translatable(targetItem.translationKey())));
         SimpleGui recipeView = new SimpleGui(title, 6);
 
-        // Fülle den Hintergrund mit Platzhaltern
+        // Background
         recipeView.fill(Items.named(Material.GRAY_STAINED_GLASS_PANE, Component.text(" ")));
 
-        // Setze das Ergebnis-Item und einen Pfeil
+        // Result and an arrow
         recipeView.setItem(23, Items.named(Material.ARROW, Component.text("->")));
         recipeView.setItem(25, targetItem.clone());
 
-        // Definiere die Slots für das 3x3 Crafting-Feld
+        // 3x3 crafting grid
         int[] craftingSlots = {11, 12, 13, 20, 21, 22, 29, 30, 31};
         for (int slot : craftingSlots) {
             recipeView.setItem(slot, null);
@@ -95,15 +97,15 @@ public class RecipeCommand implements BasicCommand {
                 recipeView.setItem(craftingSlots[i], toDisplayItem(choices.get(i)));
             }
         } else {
-            // Für andere Rezept-Typen wie Schmelzen, Schmieden etc.
-            player.sendMessage(plugin.getPrefix().append(Component.text("Dieser Rezept-Typ kann nicht angezeigt werden", NamedTextColor.YELLOW)));
+            // Smelting, smithing, ...
+            this.plugin.getLanguageManager().send(player, Message.RECIPE_UNSUPPORTED);
             return;
         }
         recipeView.open(player);
     }
 
     /**
-     * Picks one representative item for an ingredient (e.g. the first plank type for "any planks").
+     * Picks one representative item for an ingredient (e.g. the first plank type for "any planks")
      */
     private static @Nullable ItemStack toDisplayItem(@Nullable RecipeChoice choice) {
         return switch (choice) {
@@ -117,6 +119,6 @@ public class RecipeCommand implements BasicCommand {
 
     @Override
     public @Nullable String permission() {
-        return null; // Keine spezielle Permission benötigt
+        return null; // Everybody
     }
 }

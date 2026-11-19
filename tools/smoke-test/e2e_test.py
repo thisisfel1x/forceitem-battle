@@ -1,26 +1,32 @@
 #!/usr/bin/env python3
 """
 End-to-end test with a real game client: Paper server with the plugin + the resource pack served over local
-HTTP + the Fabric client test of tools/icon-exporter (ServerEndToEndGameTest), which joins the server.
+HTTP + the Fabric client test of tools/icon-exporter (ServerEndToEndGameTest), which joins the server
 
     python3 tools/smoke-test/e2e_test.py --minecraft 26.3 \\
         --plugin build/libs/forceitem-battle-1.1.0.jar --pack build/libs/forceitem-battle-pack-1.1.0.zip
 
 A game needs two players, so two clients join (Player0 and Player1, two Gradle runs). Both accept the resource
-pack, the script starts a game from the server console once both are in, and the primary client checks that the
-boss bar shows the item icon sprite from the pack (not the "missing texture"). Screenshots of lobby and boss bar:
+pack and check the lobby texts in their own client language (Player0 English, Player1 German). Player0 (operator)
+enables the setting "Starter tools" in the settings GUI. Once both report ready, the script starts a game from the
+server console. Player0 checks that the boss bar shows the item icon sprite from the pack (not the "missing
+texture") and that it received the unbreakable starter tools. Screenshots of lobby and boss bar:
 tools/icon-exporter/build/e2e-test. Locally two game windows open - they close themselves when done. The client has to match the Minecraft version of
 tools/icon-exporter (the newest supported version). Accepts the Minecraft EULA (https://aka.ms/MinecraftEULA).
-In CI the script runs inside xvfb-run (the client needs a display).
+In CI the script runs inside xvfb-run (the client needs a display)
 """
 
 import argparse
+import hashlib
 import http.server
+import json
 import os
 import re
 import subprocess
 import sys
 import threading
+import time
+import uuid
 import zipfile
 from pathlib import Path
 
@@ -28,10 +34,15 @@ import paper
 
 ROOT = Path(__file__).resolve().parents[2]
 EXPORTER_DIR = ROOT / "tools" / "icon-exporter"
+# Written by the clients (tools/icon-exporter build.gradle: fib.e2e.output)
+CLIENT_OUTPUT = EXPORTER_DIR / "build" / "e2e-test"
+PLAYERS = ["Player0", "Player1"]
+# Marker files of ServerEndToEndGameTest: lobby checks done (and settings changed) - the game may start
+READY_MARKERS = ["primary-ready", "secondary-ready"]
 
 
 def serve_pack(pack_file, port):
-    """Serves the pack as http://127.0.0.1:<port>/pack.zip in a background thread."""
+    """Serves the pack as http://127.0.0.1:<port>/pack.zip in a background thread"""
 
     class Handler(http.server.SimpleHTTPRequestHandler):
         def translate_path(self, path):
@@ -46,7 +57,7 @@ def serve_pack(pack_file, port):
 
 
 def write_plugin_config(server_dir, plugin_jar, pack_url, pack_sha1):
-    """The default config of the jar, with the resource pack pointing to the local HTTP server."""
+    """The default config of the jar, with the resource pack pointing to the local HTTP server"""
     with zipfile.ZipFile(plugin_jar) as jar:
         config = jar.read("config.yml").decode("utf-8")
     config = re.sub(r'^(\s*)url: ".*"$', rf'\1url: "{pack_url}"', config, count=1, flags=re.MULTILINE)
@@ -56,12 +67,35 @@ def write_plugin_config(server_dir, plugin_jar, pack_url, pack_sha1):
     target.write_text(config, encoding="utf-8")
 
 
+def offline_uuid(name):
+    """UUID of a player on an offline mode server (Java: UUID.nameUUIDFromBytes("OfflinePlayer:" + name))"""
+    digest = bytearray(hashlib.md5(f"OfflinePlayer:{name}".encode("utf-8")).digest())
+    digest[6] = (digest[6] & 0x0F) | 0x30
+    digest[8] = (digest[8] & 0x3F) | 0x80
+    return str(uuid.UUID(bytes=bytes(digest)))
+
+
+def write_operators(server_dir):
+    """Both test players are operators - the lobby settings item needs forceitembattle.settings"""
+    operators = [{"uuid": offline_uuid(name), "name": name, "level": 4, "bypassesPlayerLimit": False} for name in PLAYERS]
+    (server_dir / "ops.json").write_text(json.dumps(operators, indent=2), encoding="utf-8")
+
+
+def wait_for_files(paths, timeout):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if all(path.exists() for path in paths):
+            return True
+        time.sleep(0.5)
+    return False
+
+
 # Logged by the server for every joining player (the plugin replaces the "joined the game" message)
 JOIN_LINE = "logged in with entity id"
 
 
 class Client:
-    """A Fabric client test run (ServerEndToEndGameTest) - its output is printed with a prefix and kept."""
+    """A Fabric client test run (ServerEndToEndGameTest) - its output is printed with a prefix and kept"""
 
     def __init__(self, role, address):
         self.role = role
@@ -133,6 +167,9 @@ def main():
     server_dir = args.workdir / minecraft
     server_port = paper.free_port()
     paper.prepare_server(server_dir, args.plugin, server_port)
+    write_operators(server_dir)
+    for marker in READY_MARKERS:
+        (CLIENT_OUTPUT / marker).unlink(missing_ok=True)
     write_plugin_config(server_dir, args.plugin, f"http://127.0.0.1:{pack_port}/pack.zip",
                         paper.file_hash(args.pack, "sha1"))
 
@@ -149,9 +186,10 @@ def main():
         if server.wait_for(lambda line: JOIN_LINE in line, 600):
             clients.append(Client("secondary", address))
 
-            # Start a game as soon as both clients joined: 1 minute, no jokers
+            # Start a game as soon as both clients joined and finished their lobby checks: 1 minute, no jokers
             def start_game():
-                if server.wait_for_count(lambda line: JOIN_LINE in line, 2, args.timeout):
+                if (server.wait_for_count(lambda line: JOIN_LINE in line, 2, args.timeout)
+                        and wait_for_files([CLIENT_OUTPUT / marker for marker in READY_MARKERS], args.timeout)):
                     server.command("start 1 0")
 
             threading.Thread(target=start_game, daemon=True).start()

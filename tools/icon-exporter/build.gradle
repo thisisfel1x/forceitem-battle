@@ -34,9 +34,14 @@ loom.runs.matching { it.name == 'clientGameTest' }.configureEach {
     vmArg "-Dfib.e2e.server=${project.findProperty('e2eServer') ?: ''}"
     vmArg "-Dfib.e2e.role=${e2eRole}"
     vmArg "-Dfib.e2e.output=${layout.buildDirectory.dir('e2e-test').get().asFile.absolutePath}"
+    // The two clients send different languages - the plugin has to answer each in its own
+    vmArg "-Dfib.e2e.language=${e2eRole == 'secondary' ? 'de_de' : 'en_us'}"
+    // Fixed names: e2e_test.py makes both operators (ops.json, offline UUIDs) for the settings item
     if (e2eRole == 'secondary') {
         runDir = 'build/run/clientGameTest-secondary'
         programArguments.set(['--username', 'Player1'])
+    } else {
+        programArguments.set(['--username', 'Player0'])
     }
     vmArg "-Dfib.icons.dir=${new File(repositoryRoot, 'resourcepack/icons').absolutePath}"
     vmArg "-Dfib.icons.manifest=${new File(repositoryRoot, 'resourcepack/icons.json').absolutePath}"

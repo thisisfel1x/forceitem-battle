@@ -5,7 +5,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 
 /**
  * Helpers shared by the client tests. All client tests are registered in fabric.mod.json, the system property
- * {@code fib.test} (set by build.gradle) decides which one actually runs.
+ * {@code fib.test} (set by build.gradle) decides which one actually runs
  */
 final class ClientTests {
 
@@ -21,7 +21,7 @@ final class ClientTests {
 
     /**
      * Resizes the framebuffer and forces a GUI scale. Items in the GUI are drawn from an atlas whose
-     * slots are {@code 16 * guiScale} pixels big, so the GUI scale decides the icon resolution.
+     * slots are {@code 16 * guiScale} pixels big, so the GUI scale decides the icon resolution
      */
     static void applyWindow(ClientGameTestContext context, int width, int height, int guiScale) {
         context.runOnClient(minecraft -> {

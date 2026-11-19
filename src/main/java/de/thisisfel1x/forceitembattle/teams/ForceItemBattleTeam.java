@@ -1,6 +1,7 @@
 package de.thisisfel1x.forceitembattle.teams;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import de.thisisfel1x.forceitembattle.utils.FoundItemData;
 import de.thisisfel1x.forceitembattle.utils.ItemRegistry;
@@ -8,8 +9,9 @@ import de.thisisfel1x.forceitembattle.utils.Items;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -47,8 +49,9 @@ public class ForceItemBattleTeam {
 
         this.foundItems = new ArrayList<>();
 
-        this.bossBar = BossBar.bossBar(Component.text("Warte auf Spielstart..."), 1f, BossBar.Color.WHITE, BossBar.Overlay.PROGRESS);
-        this.backpack = Bukkit.createInventory(null, InventoryType.CHEST, Component.text("Backpack"));
+        // Shared by all members - translatable, so every client sees its own language
+        this.bossBar = BossBar.bossBar(Message.LOBBY_BOSSBAR.translatable(), 1f, BossBar.Color.WHITE, BossBar.Overlay.PROGRESS);
+        this.backpack = Bukkit.createInventory(null, InventoryType.CHEST, Message.BACKPACK_TITLE.translatable());
     }
 
     public void setupForGame() {
@@ -81,7 +84,7 @@ public class ForceItemBattleTeam {
 
     /**
      * Timestamp of the most recently found item, used as tie-breaker in the ranking
-     * (the team that reached its score earlier wins).
+     * (the team that reached its score earlier wins)
      */
     public long getLastFoundTimestamp() {
         return this.foundItems.isEmpty() ? Long.MAX_VALUE : this.foundItems.getLast().timestamp();
@@ -103,27 +106,20 @@ public class ForceItemBattleTeam {
      */
     public boolean addPlayer(GamePlayer gamePlayer) {
         if (this.teamMembers.contains(gamePlayer)) {
-            gamePlayer.sendMessage(ForceItemBattle.getInstance().getPrefix().append(
-                    Component.text("Du bist bereits in diesem Team", NamedTextColor.RED)
-            ));
+            gamePlayer.sendMessage(Message.TEAM_ALREADY_MEMBER);
             return false;
         }
 
         if (this.isFull()) {
-            gamePlayer.sendMessage(ForceItemBattle.getInstance().getPrefix().append(
-                    Component.text("Dieses Team ist bereits voll", NamedTextColor.RED)
-            ));
+            gamePlayer.sendMessage(Message.TEAM_FULL);
             return false;
         }
 
         this.teamMembers.add(gamePlayer);
         gamePlayer.setTeam(this);
 
-        Component joinMessage = ForceItemBattle.getInstance().getPrefix().append(
-                Component.text(gamePlayer.getName(), teamColor)
-                        .append(Component.text(" hat dein Team betreten", NamedTextColor.GRAY))
-        );
-        this.broadcastTeamMessage(joinMessage);
+        this.broadcastTeamMessage(Message.TEAM_MEMBER_JOINED,
+                Placeholder.component("player", Component.text(gamePlayer.getName(), teamColor)));
 
         gamePlayer.ifOnline(player -> player.showBossBar(this.bossBar));
 
@@ -135,11 +131,8 @@ public class ForceItemBattleTeam {
         if (this.teamMembers.remove(gamePlayer)) {
             gamePlayer.setTeam(null);
 
-            Component leaveMessage = ForceItemBattle.getInstance().getPrefix().append(
-                    Component.text(gamePlayer.getName(), teamColor)
-                            .append(Component.text(" hat dein Team verlassen", NamedTextColor.GRAY))
-            );
-            this.broadcastTeamMessage(leaveMessage);
+            this.broadcastTeamMessage(Message.TEAM_MEMBER_LEFT,
+                    Placeholder.component("player", Component.text(gamePlayer.getName(), teamColor)));
 
             gamePlayer.ifOnline(player -> player.hideBossBar(this.bossBar));
 
@@ -147,8 +140,18 @@ public class ForceItemBattleTeam {
         }
     }
 
-    public void broadcastTeamMessage(Component message) {
-        this.getTeamAudience().sendMessage(message);
+    /**
+     * Sends the message to every online member in its language
+     */
+    public void broadcastTeamMessage(Message message, TagResolver... placeholders) {
+        ForceItemBattle.getInstance().getLanguageManager().send(this.getOnlineMembers(), message, placeholders);
+    }
+
+    /**
+     * The team name in the team color, e.g. for placeholders
+     */
+    public Component getDisplayName() {
+        return Component.text(this.teamName, this.teamColor);
     }
 
     public void updateBossBar() {
@@ -163,14 +166,14 @@ public class ForceItemBattleTeam {
     }
 
     /**
-     * Updates the item shown above the head of every online team member.
+     * Updates the item shown above the head of every online team member
      */
     public void updateArmorstands() {
         this.teamMembers.forEach(GamePlayer::updateArmorstandItem);
     }
 
     /**
-     * Hands out the jokers for this game.
+     * Hands out the jokers for this game
      *
      * @param amount  joker amount from /start (0 - {@value #MAX_JOKER_STACK})
      * @param perTeam if {@code true} the amount is given once per team, otherwise to every member
@@ -189,16 +192,18 @@ public class ForceItemBattleTeam {
             for (int i = 0; i < receivers.size(); i++) {
                 int share = base + (i < remainder ? 1 : 0);
                 if (share > 0) {
-                    receivers.get(i).getInventory().addItem(createJoker(share));
+                    receivers.get(i).getInventory().addItem(createJoker(receivers.get(i), share));
                 }
             }
         } else {
-            receivers.forEach(player -> player.getInventory().addItem(createJoker(clampedAmount)));
+            receivers.forEach(player -> player.getInventory().addItem(createJoker(player, clampedAmount)));
         }
     }
 
-    private static ItemStack createJoker(int amount) {
-        ItemStack joker = Items.named(Material.BARRIER, Component.text("Joker", NamedTextColor.RED));
+    private static ItemStack createJoker(Player receiver, int amount) {
+        // Jokers are recognized by their material, the name is only for the player
+        ItemStack joker = Items.named(Material.BARRIER,
+                ForceItemBattle.getInstance().getLanguageManager().render(receiver, Message.JOKER_NAME));
         joker.setAmount(amount);
         return joker;
     }

@@ -1,10 +1,9 @@
 package de.thisisfel1x.forceitembattle.gui;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import de.thisisfel1x.forceitembattle.utils.Items;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -26,7 +25,8 @@ public class SpectatorPlayerInventory {
                 .filter(gamePlayer -> !gamePlayer.isSpectator() && gamePlayer.isInTeam() && gamePlayer.isOnline())
                 .toList();
 
-        SimpleGui gui = new SimpleGui(Component.text("Alle Spieler"), (watchablePlayers.size() + 8) / 9);
+        SimpleGui gui = new SimpleGui(this.forceItemBattle.getLanguageManager().render(player, Message.SPECTATOR_GUI_TITLE),
+                (watchablePlayers.size() + 8) / 9);
 
         for (GamePlayer gamePlayer : watchablePlayers) {
             Player target = gamePlayer.getPlayer();
@@ -35,8 +35,7 @@ public class SpectatorPlayerInventory {
             ItemStack skull = Items.named(Material.PLAYER_HEAD, target.displayName());
             skull.editMeta(SkullMeta.class, meta -> {
                 meta.setOwningPlayer(target);
-                meta.lore(List.of(Items.noItalic(
-                        Component.text(gamePlayer.getTeam().getTeamName(), gamePlayer.getTeam().getTeamColor()))));
+                meta.lore(List.of(Items.noItalic(gamePlayer.getTeam().getDisplayName())));
             });
 
             gui.addItem(skull, event -> {
@@ -45,8 +44,7 @@ public class SpectatorPlayerInventory {
                 // The target may have left since the menu was opened
                 Player currentTarget = gamePlayer.getPlayer();
                 if (currentTarget == null) {
-                    player.sendMessage(this.forceItemBattle.getPrefix()
-                            .append(Component.text("Dieser Spieler ist nicht mehr online", NamedTextColor.RED)));
+                    this.forceItemBattle.getLanguageManager().send(player, Message.SPECTATOR_PLAYER_OFFLINE);
                     return;
                 }
                 player.teleport(currentTarget.getLocation());

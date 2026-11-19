@@ -23,7 +23,7 @@ public class InventoryClickListener implements Listener {
         GameStateEnum gameStateEnum = this.forceItemBattle.getGameManager().getCurrentGameState().getGameStateEnum();
 
         // Outside of the running game nobody moves items; ingame only spectators are locked.
-        // Clicks inside plugin GUIs are handled (and cancelled) by the GuiListener.
+        // Clicks inside plugin GUIs are handled (and cancelled) by the GuiListener
         if (gameStateEnum != GameStateEnum.INGAME || this.forceItemBattle.getTeamManager().isSpectator(player)) {
             event.setCancelled(true);
         }

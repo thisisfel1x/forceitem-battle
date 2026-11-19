@@ -4,6 +4,8 @@ import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.game.GameState;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
+import de.thisisfel1x.forceitembattle.i18n.LanguageManager;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import io.papermc.paper.registry.keys.SoundEventKeys;
 import net.kyori.adventure.sound.Sound;
@@ -11,9 +13,11 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRules;
+import org.bukkit.entity.Player;
 
 import java.time.Duration;
 
@@ -53,13 +57,15 @@ public class StartingState extends GameState {
 
         this.taskId = this.forceItemBattle.getServer().getScheduler().scheduleSyncRepeatingTask(this.forceItemBattle, () -> {
             final var audience = this.forceItemBattle.getServer();
+            final LanguageManager languageManager = this.forceItemBattle.getLanguageManager();
 
             if (counter <= 0) {
                 this.forceItemBattle.getServer().getScheduler().cancelTask(taskId);
 
-                Component finalTitle = Component.text("GO!", NamedTextColor.GOLD, TextDecoration.BOLD);
-                audience.showTitle(Title.title(finalTitle, Component.empty(),
-                        Title.Times.times(Duration.ofMillis(0), Duration.ofMillis(1200), Duration.ofMillis(500))));
+                Title.Times goTimes = Title.Times.times(Duration.ofMillis(0), Duration.ofMillis(1200), Duration.ofMillis(500));
+                for (Player player : this.forceItemBattle.getServer().getOnlinePlayers()) {
+                    player.showTitle(Title.title(languageManager.render(player, Message.STARTING_GO), Component.empty(), goTimes));
+                }
 
                 audience.playSound(Sound.sound(SoundEventKeys.ENTITY_PLAYER_LEVELUP, Sound.Source.MASTER, 1f, 1.2f));
 
@@ -71,21 +77,17 @@ public class StartingState extends GameState {
             TextColor titleColor = (this.counter == 3) ? NamedTextColor.GREEN :
                     (this.counter == 2) ? NamedTextColor.YELLOW : NamedTextColor.RED;
 
-            String sekundenText = (this.counter == 1) ? " Sekunde" : " Sekunden";
-
             Component mainTitle = Component.text(this.counter, titleColor, TextDecoration.BOLD);
-            Component subTitle = Component.text("Das Spiel beginnt...", NamedTextColor.GRAY);
-            Component actionBar = Component.text("Das Spiel startet in " + this.counter + sekundenText, NamedTextColor.WHITE);
+            Title.Times countdownTimes = Title.Times.times(Duration.ofMillis(0), Duration.ofMillis(2000), Duration.ofMillis(0));
+            TagResolver seconds = LanguageManager.count("seconds", this.counter);
 
-            Title countdownTitle = Title.title(mainTitle, subTitle,
-                    Title.Times.times(Duration.ofMillis(0), Duration.ofMillis(2000), Duration.ofMillis(0)));
+            for (Player player : this.forceItemBattle.getServer().getOnlinePlayers()) {
+                player.showTitle(Title.title(mainTitle, languageManager.render(player, Message.STARTING_SUBTITLE), countdownTimes));
+                player.sendActionBar(languageManager.render(player, Message.STARTING_ACTIONBAR, seconds));
+            }
 
             float pitch = 0.7f + ((startCounter - this.counter) / (float) startCounter);
-            Sound plingSound = Sound.sound(SoundEventKeys.BLOCK_NOTE_BLOCK_PLING, Sound.Source.MASTER, 1f, pitch);
-
-            audience.showTitle(countdownTitle);
-            audience.sendActionBar(actionBar);
-            audience.playSound(plingSound);
+            audience.playSound(Sound.sound(SoundEventKeys.BLOCK_NOTE_BLOCK_PLING, Sound.Source.MASTER, 1f, pitch));
 
             this.counter--;
         }, 0L, 20L);

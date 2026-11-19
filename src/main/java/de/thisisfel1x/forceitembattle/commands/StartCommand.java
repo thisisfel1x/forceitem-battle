@@ -3,11 +3,12 @@ package de.thisisfel1x.forceitembattle.commands;
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
 import de.thisisfel1x.forceitembattle.game.states.StartingState;
+import de.thisisfel1x.forceitembattle.i18n.LanguageManager;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import de.thisisfel1x.forceitembattle.teams.ForceItemBattleTeam;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,47 +30,46 @@ public class StartCommand implements BasicCommand {
     public void execute(CommandSourceStack source, String[] args) {
         // Works for players and the console
         CommandSender sender = source.getSender();
+        LanguageManager languageManager = this.forceItemBattle.getLanguageManager();
 
         if (this.forceItemBattle.getGameManager().getCurrentGameState().getGameStateEnum() != GameStateEnum.IDLE) {
-            this.sendError(sender, "Das Spiel läuft bereits oder wurde schon gestartet");
+            languageManager.send(sender, Message.COMMAND_START_ALREADY_RUNNING);
             return;
         }
 
         if (args.length != 2) {
-            this.sendError(sender, "Verwendung: /start <Dauer in Minuten> <Anzahl Joker>");
+            languageManager.send(sender, Message.COMMAND_START_USAGE);
             return;
         }
 
         OptionalInt minutes = parseInt(args[0]);
         if (minutes.isEmpty() || minutes.getAsInt() < 1 || minutes.getAsInt() > MAX_MINUTES) {
-            this.sendError(sender, "Die Dauer muss eine Zahl zwischen 1 und " + MAX_MINUTES + " Minuten sein");
+            languageManager.send(sender, Message.COMMAND_START_INVALID_DURATION,
+                    Placeholder.unparsed("max", Integer.toString(MAX_MINUTES)));
             return;
         }
 
         OptionalInt jokerAmount = parseInt(args[1]);
         if (jokerAmount.isEmpty() || jokerAmount.getAsInt() < 0 || jokerAmount.getAsInt() > ForceItemBattleTeam.MAX_JOKER_STACK) {
-            this.sendError(sender, "Die Joker-Anzahl muss eine Zahl zwischen 0 und " + ForceItemBattleTeam.MAX_JOKER_STACK + " sein");
+            languageManager.send(sender, Message.COMMAND_START_INVALID_JOKERS,
+                    Placeholder.unparsed("max", Integer.toString(ForceItemBattleTeam.MAX_JOKER_STACK)));
             return;
         }
 
         boolean anyPlayer = this.forceItemBattle.getTeamManager().getGamePlayers().values().stream()
                 .anyMatch(gamePlayer -> !gamePlayer.isSpectator());
         if (!anyPlayer) {
-            this.sendError(sender, "Es sind keine Spieler online");
+            languageManager.send(sender, Message.COMMAND_START_NO_PLAYERS);
             return;
         }
 
         this.forceItemBattle.setGameTime(minutes.getAsInt());
         this.forceItemBattle.setJokerAmount(jokerAmount.getAsInt());
 
-        sender.sendMessage(this.forceItemBattle.getPrefix().append(Component.text("Das Spiel wird gestartet", NamedTextColor.GREEN)));
+        languageManager.send(sender, Message.COMMAND_START_STARTING);
 
         StartingState startingState = new StartingState(this.forceItemBattle.getGameManager());
         this.forceItemBattle.getGameManager().setCurrentGameState(startingState);
-    }
-
-    private void sendError(CommandSender sender, String message) {
-        sender.sendMessage(this.forceItemBattle.getPrefix().append(Component.text(message, NamedTextColor.RED)));
     }
 
     private static OptionalInt parseInt(String input) {

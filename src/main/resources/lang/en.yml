@@ -1,0 +1,139 @@
+# ForceItemBattle - English
+#
+# Texts in MiniMessage format: https://docs.advntr.dev/minimessage/format.html (web editor: https://webui.advntr.dev)
+# <prefix> works in every message. Further placeholders are noted above the messages.
+# <plural:'1#item|1<items'> picks a text by the number of the message (java.text.ChoiceFormat pattern)
+#
+# Missing keys fall back to the bundled version of this file. New language: copy this file to
+# lang/<language code>.yml (Minecraft language code, e.g. fr.yml or pt_br.yml) and translate it - it is
+# detected on the next start and used for every player with that client language
+
+prefix: "<#F9A03F>ForceItemBattle</#F9A03F> <dark_gray>●</dark_gray> <gray>"
+
+command:
+  players-only: "<prefix><red>Only players can use this command"
+  only-ingame: "<prefix><red>This command can only be used during the game"
+  not-a-player: "<prefix><red>You are not playing"
+  not-in-team: "<prefix><red>You are not in a team"
+  top:
+    overworld-only: "<prefix><red>This command only works in the Overworld"
+  start:
+    already-running: "<prefix><red>The game is already running or has been started"
+    usage: '<prefix><red>Usage: /start \<duration in minutes> \<amount of jokers>'
+    # <max>
+    invalid-duration: "<prefix><red>The duration has to be a number between 1 and <max> minutes"
+    # <max>
+    invalid-jokers: "<prefix><red>The amount of jokers has to be a number between 0 and <max>"
+    no-players: "<prefix><red>No players are online"
+    starting: "<prefix><green>The game is starting"
+
+backpack:
+  disabled: "<prefix><red>The backpack is disabled"
+  title: "Backpack"
+
+recipe:
+  # <item>
+  title: "Recipe for <item>"
+  none: "<prefix><yellow>This item has no crafting recipe"
+  unsupported: "<prefix><yellow>This type of recipe cannot be shown"
+
+lobby:
+  # <dots>: animated, 0 to 3 dots
+  waiting-for-players: "<white>Waiting for more players<dots>"
+  bossbar: "Waiting for the game to start..."
+  item:
+    team-selector: "<white>Choose your team"
+    settings: "<red>Settings"
+
+player:
+  # <player>
+  joined: "<prefix><gray><player> joined the game"
+  # <player>
+  left: "<prefix><gray><player> left the game"
+  # <team>
+  welcome-back: "<prefix><gray>Welcome back! You are in <team> again"
+
+spectator:
+  item:
+    compass: "<white>Watch players"
+  gui:
+    title: "All players"
+  player-offline: "<prefix><red>This player is not online anymore"
+
+team:
+  gui:
+    title: "Choose your team"
+  already-member: "<prefix><red>You are already in this team"
+  full: "<prefix><red>This team is full"
+  # <player>
+  member-joined: "<prefix><player> <gray>joined your team"
+  # <player>
+  member-left: "<prefix><player> <gray>left your team"
+  # <team>
+  assigned: "<prefix><gray>You have been assigned to <team>"
+  no-free-team: "<prefix><red>There is no free team left for you"
+
+joker:
+  name: "<red>Joker"
+  # <player>, <item>
+  used: "<prefix><yellow><player></yellow> <gray>used a joker for</gray> <item><gray>!"
+
+item:
+  # <item>: the next item
+  found: "<prefix><green>Item found!</green> <gray>Next item:</gray> <yellow><item>"
+  # <item>
+  next: "<prefix><gray>Next item:</gray> <yellow><item>"
+
+settings:
+  gui:
+    title: "Settings"
+  status:
+    enabled: "<gray>» Status: <green>ENABLED"
+    disabled: "<gray>» Status: <red>DISABLED"
+  backpack:
+    name: "<white>Backpack"
+    description: "<gray>Every team gets a shared backpack (/backpack)"
+  no-hunger:
+    name: "<white>No hunger"
+    description: "<gray>The food bar stays full the whole game"
+  no-damage:
+    name: "<white>No damage"
+    description: "<gray>Players do not lose any hearts during the game"
+  starter-tools:
+    name: "<white>Starter tools"
+    description: "<gray>Every player gets an unbreakable diamond pickaxe<newline><gray>and axe with Efficiency I when the game starts"
+
+starting:
+  subtitle: "<gray>The game is starting..."
+  # <seconds>
+  actionbar: "<white>The game starts in <seconds> <plural:'1#second|1<seconds'>"
+  go: "<gold><bold>GO!"
+
+game:
+  # <time>: mm:ss
+  timer: "<yellow><time>"
+  # <time>: mm:ss
+  timer-spectator: "<yellow><time></yellow> <gray>| Spectator"
+
+results:
+  title: "<gold><bold>Results"
+  hidden-team: "Team ?"
+  joker-suffix: "<yellow> (Joker)"
+  # <items>
+  team-items: "<white><items> <plural:'1#item|1<items'> found!"
+  final:
+    header: "<gold><bold>▬▬▬▬▬ Final results ▬▬▬▬▬"
+    # <rank>, <team>, <items>
+    line: "<gray>#<rank></gray> <team> <yellow>- <items> <plural:'1#item|1<items'>"
+    footer: "<gold><bold>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+  # <seconds>
+  shutdown: "<prefix><red>The server stops in <yellow><seconds></yellow> <plural:'1#second|1<seconds'>..."
+
+scoreboard:
+  # <online>, <max> - \ue652 is the person icon of the resource pack
+  lobby-players: "<white>\ue652 <dark_gray>●</dark_gray> <green><online><gray>/</gray><white><max>"
+  # <team_color>...</team_color>, <id>, <items>
+  team-line: "<team_color>#<id></team_color> <dark_gray>●</dark_gray> <white><items> <plural:'1#item|1<items'>"
+
+resource-pack:
+  prompt: "This pack is needed for the item icons!"

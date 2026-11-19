@@ -11,6 +11,7 @@ import de.thisisfel1x.forceitembattle.gui.GuiListener;
 import de.thisisfel1x.forceitembattle.gui.SettingsInventory;
 import de.thisisfel1x.forceitembattle.gui.SpectatorPlayerInventory;
 import de.thisisfel1x.forceitembattle.gui.TeamSelectorInventory;
+import de.thisisfel1x.forceitembattle.i18n.LanguageManager;
 import de.thisisfel1x.forceitembattle.listeners.block.BlockBreakListener;
 import de.thisisfel1x.forceitembattle.listeners.block.BlockPlaceListener;
 import de.thisisfel1x.forceitembattle.listeners.entity.EntityDamageListener;
@@ -31,10 +32,7 @@ import de.thisisfel1x.forceitembattle.utils.ForceItemBattleScoreboardManager;
 import de.thisisfel1x.forceitembattle.utils.IconManager;
 import de.thisisfel1x.forceitembattle.utils.ItemRegistry;
 import de.thisisfel1x.forceitembattle.utils.ResourcePackService;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.translation.GlobalTranslator;
 import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
 import net.megavex.scoreboardlibrary.api.exception.NoPacketAdapterAvailableException;
 import net.megavex.scoreboardlibrary.api.noop.NoopScoreboardLibrary;
@@ -59,14 +57,13 @@ public final class ForceItemBattle extends JavaPlugin {
     private TeamManager teamManager;
     private ItemTracker itemTracker;
 
+    private LanguageManager languageManager;
     private ResourcePackService resourcePackService;
     private IconManager iconManager;
 
     private ScoreboardLibrary scoreboardLibrary;
     private ForceItemBattleScoreboardManager forceItemBattleScoreboardManager;
     private SettingsManager settingsManager;
-
-    private final MiniMessage miniMessage = MiniMessage.miniMessage();
 
     // Inventories
     private TeamSelectorInventory teamSelectorInventory;
@@ -78,6 +75,14 @@ public final class ForceItemBattle extends JavaPlugin {
         instance = this;
 
         this.saveDefaultConfig();
+
+        this.languageManager = new LanguageManager(this.getDataFolder().toPath().resolve("lang"),
+                language -> this.getResource("lang/" + language + ".yml"),
+                this.getConfig().getString("language.default", LanguageManager.FALLBACK_LANGUAGE),
+                this.getConfig().getBoolean("language.per-player", true),
+                this.getLogger());
+        // Renders Message.translatable() (shared boss bars and inventories) in the language of every client
+        GlobalTranslator.translator().addSource(this.languageManager.translator());
 
         this.resourcePackService = new ResourcePackService(this);
         this.iconManager = new IconManager(this);
@@ -122,11 +127,15 @@ public final class ForceItemBattle extends JavaPlugin {
         if (this.scoreboardLibrary != null) {
             this.scoreboardLibrary.close();
         }
+
+        if (this.languageManager != null) {
+            GlobalTranslator.translator().removeSource(this.languageManager.translator());
+        }
     }
 
     /**
      * The icons are rendered for a specific Minecraft version (tools/icon-exporter). Items that were
-     * added to the game afterwards have no icon and are shown by name only.
+     * added to the game afterwards have no icon and are shown by name only
      */
     private void warnAboutMissingIcons() {
         if (!this.iconManager.isLoaded()) return;
@@ -182,18 +191,12 @@ public final class ForceItemBattle extends JavaPlugin {
         return instance;
     }
 
-    public Component getPrefix() {
-        return Component.text("ForceItemBattle", TextColor.fromHexString("#F9A03F"))
-                .append(Component.text(" ● ", NamedTextColor.DARK_GRAY))
-                .append(Component.text("", NamedTextColor.GRAY));
-    }
-
-    public MiniMessage miniMessage() {
-        return miniMessage;
+    public LanguageManager getLanguageManager() {
+        return languageManager;
     }
 
     /**
-     * The primary (overworld) world of the server, independent of its configured name.
+     * The primary (overworld) world of the server, independent of its configured name
      */
     public World getMainWorld() {
         return Bukkit.getWorlds().getFirst();

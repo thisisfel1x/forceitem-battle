@@ -18,7 +18,7 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * Event based item detection for instant feedback. Everything these events miss is caught by
- * the periodic inventory scan of the {@link de.thisisfel1x.forceitembattle.game.ItemTracker}.
+ * the periodic inventory scan of the {@link de.thisisfel1x.forceitembattle.game.ItemTracker}
  */
 public class ItemFoundListener implements Listener {
 

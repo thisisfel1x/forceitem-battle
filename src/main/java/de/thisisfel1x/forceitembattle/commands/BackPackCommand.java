@@ -3,12 +3,11 @@ package de.thisisfel1x.forceitembattle.commands;
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import de.thisisfel1x.forceitembattle.settings.SettingType;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 
 public class BackPackCommand implements BasicCommand {
@@ -22,24 +21,24 @@ public class BackPackCommand implements BasicCommand {
     @Override
     public void execute(CommandSourceStack source, String[] args) {
         if (!(source.getSender() instanceof Player player)) {
-            source.getSender().sendMessage(Component.text("Dieser Befehl ist nur für Spieler", NamedTextColor.RED));
+            this.forceItemBattle.getLanguageManager().send(source.getSender(), Message.COMMAND_PLAYERS_ONLY);
             return;
         }
 
         GameManager gameManager = forceItemBattle.getGameManager();
         if (gameManager.getCurrentGameState().getGameStateEnum() != GameStateEnum.INGAME) {
-            player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Du kannst dein Backpack nur während dem Spiel öffnen!", NamedTextColor.RED)));
+            this.forceItemBattle.getLanguageManager().send(player, Message.COMMAND_ONLY_INGAME);
             return;
         }
 
         if (!this.forceItemBattle.getSettingsManager().isEnabled(SettingType.BACKPACK)) {
-            player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Der Backpack ist deaktiviert", NamedTextColor.RED)));
+            this.forceItemBattle.getLanguageManager().send(player, Message.BACKPACK_DISABLED);
             return;
         }
 
         GamePlayer gamePlayer = forceItemBattle.getTeamManager().getGamePlayer(player.getUniqueId());
         if (gamePlayer == null || gamePlayer.isSpectator() || !gamePlayer.isInTeam()) {
-            player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Du bist in keinem Team!", NamedTextColor.RED)));
+            this.forceItemBattle.getLanguageManager().send(player, Message.COMMAND_NOT_IN_TEAM);
             return;
         }
 

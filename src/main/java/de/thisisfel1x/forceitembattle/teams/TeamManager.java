@@ -1,10 +1,10 @@
 package de.thisisfel1x.forceitembattle.teams;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
@@ -82,7 +82,7 @@ public class TeamManager {
     /**
      * Puts every player without a team into the team with the fewest members, so players are
      * spread across empty teams first and teams are only filled up when no empty team is left.
-     * Players are only kicked if every single team is full.
+     * Players are only kicked if every single team is full
      */
     public void assignAllPlayersWithoutTeam() {
         List<GamePlayer> teamlessPlayers = new ArrayList<>(this.gamePlayers.values().stream()
@@ -111,21 +111,15 @@ public class TeamManager {
                 continue;
             }
 
-            playerToAssign.sendMessage(
-                    forceItemBattle.getPrefix()
-                            .append(Component.text("Du wurdest ", NamedTextColor.GRAY))
-                            .append(Component.text(targetTeam.get().getTeamName(), targetTeam.get().getTeamColor()))
-                            .append(Component.text(" zugewiesen!", NamedTextColor.GRAY))
-            );
+            playerToAssign.sendMessage(Message.TEAM_ASSIGNED,
+                    Placeholder.component("team", targetTeam.get().getDisplayName()));
         }
 
         // Remove first, kick afterwards: nothing else may iterate over stale team-less players
         for (GamePlayer gamePlayer : playersWithoutSpace) {
             this.gamePlayers.remove(gamePlayer.getUniqueId());
             gamePlayer.ifOnline(player -> player.kick(
-                    forceItemBattle.getPrefix()
-                            .append(Component.text("Es konnte kein freies Team mehr für dich gefunden werden", NamedTextColor.RED))
-            ));
+                    this.forceItemBattle.getLanguageManager().render(player, Message.TEAM_NO_FREE_TEAM)));
         }
     }
 
@@ -151,7 +145,7 @@ public class TeamManager {
     }
 
     /**
-     * Hides all online spectators from the given (non-spectator) player.
+     * Hides all online spectators from the given (non-spectator) player
      */
     public void hideSpectatorsFrom(Player viewer) {
         for (GamePlayer gamePlayer : this.gamePlayers.values()) {

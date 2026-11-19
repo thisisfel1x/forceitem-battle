@@ -4,16 +4,16 @@ Detects new Minecraft versions with a stable Paper build and prepares the reposi
 Used by .github/workflows/new-minecraft-version.yml, works locally as well:
 
     python3 tools/minecraft-update/minecraft_update.py detect
-        Prints the new versions (newer than the last entry of supportedVersions, with a STABLE Paper build).
+        Prints the new versions (newer than the last entry of supportedVersions, with a STABLE Paper build)
 
     python3 tools/minecraft-update/minecraft_update.py apply 26.4 26.4.1
-        - gradle.properties: appends the versions to supportedVersions, raises resourcePackMaxFormat,
+        - gradle.properties: appends the versions to supportedVersions, raises resourcePackMaxFormat and dataPackMaxFormat,
           bumps the patch version if the current version was already released (git tag v<version> exists)
         - tools/icon-exporter/gradle.properties: Minecraft, Fabric API, loader and Loom version for the newest
           version - only if Fabric already supports it
-        Writes a Markdown summary (--summary) for the pull request.
+        Writes a Markdown summary (--summary) for the pull request
 
-In GitHub Actions the results are additionally written to $GITHUB_OUTPUT.
+In GitHub Actions the results are additionally written to $GITHUB_OUTPUT
 """
 
 import argparse
@@ -122,7 +122,7 @@ def detect():
 # ----------------------------------------------------------------------------------------------
 
 def mojang_version_info(version):
-    """pack_version and java_version from the version.json inside the client jar."""
+    """pack_version and java_version from the version.json inside the client jar"""
     manifest = http_json(MOJANG_MANIFEST)
     entry = next((v for v in manifest["versions"] if v["id"] == version), None)
     if entry is None:
@@ -136,6 +136,7 @@ def mojang_version_info(version):
             info = json.loads(archive.read("version.json"))
     return {
         "resource_format": int(info["pack_version"]["resource_major"]),
+        "data_format": int(info["pack_version"]["data_major"]),
         "java": int(info["java_version"]),
     }
 
@@ -147,7 +148,7 @@ def latest_maven_version(group_path, artifact, predicate):
 
 
 def fabric_versions(minecraft_version):
-    """Fabric API / loader / Loom for the exporter, or None if Fabric does not support the version yet."""
+    """Fabric API / loader / Loom for the exporter, or None if Fabric does not support the version yet"""
     game_versions = http_json(f"{FABRIC_META}/versions/game")
     if not any(v["version"] == minecraft_version for v in game_versions):
         return None
@@ -184,15 +185,18 @@ def apply(new_versions, summary_file):
     infos = {version: mojang_version_info(version) for version in new_versions}
     max_format = max([int(read_property(PLUGIN_PROPERTIES, "resourcePackMaxFormat"))]
                      + [info["resource_format"] for info in infos.values()])
+    max_data_format = max([int(read_property(PLUGIN_PROPERTIES, "dataPackMaxFormat"))]
+                          + [info["data_format"] for info in infos.values()])
 
     for version, info in infos.items():
-        summary.append(f"| {version} | {info['resource_format']} | {info['java']} |")
+        summary.append(f"| {version} | {info['resource_format']} | {info['data_format']} | {info['java']} |")
         if info["java"] > SUPPORTED_JAVA:
             warnings.append(f"Minecraft {version} needs Java {info['java']} - the build only knows Java "
                             f"{SUPPORTED_JAVA}. Update the toolchain, the workflows and gradle/minecraft-versions.gradle.")
 
     write_property(PLUGIN_PROPERTIES, "supportedVersions", ",".join(supported + new_versions))
     write_property(PLUGIN_PROPERTIES, "resourcePackMaxFormat", str(max_format))
+    write_property(PLUGIN_PROPERTIES, "dataPackMaxFormat", str(max_data_format))
 
     # A new release is needed (new item icons, new pack hash) - unless the current version is still unreleased
     version = read_property(PLUGIN_PROPERTIES, "version")
@@ -218,12 +222,13 @@ def apply(new_versions, summary_file):
     text = [
         f"Adds support for Minecraft {', '.join(new_versions)}.",
         "",
-        "| Minecraft | Resource pack format | Java |",
-        "|---|---|---|",
+        "| Minecraft | Resource pack format | Data pack format | Java |",
+        "|---|---|---|---|",
         *summary,
         "",
         f"- `supportedVersions`: {', '.join(supported + new_versions)}",
         f"- `resourcePackMaxFormat`: {max_format}",
+        f"- `dataPackMaxFormat`: {max_data_format}",
         f"- Plugin version: {new_version}",
     ]
     if fabric:

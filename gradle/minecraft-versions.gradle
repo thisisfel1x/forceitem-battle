@@ -1,5 +1,5 @@
 /*
- * Supported Minecraft versions (gradle.properties -> supportedVersions) and helpers around them.
+ * Supported Minecraft versions (gradle.properties -> supportedVersions) and helpers around them
  *
  *   ./gradlew build                              jar for all versions, compiled against the oldest API
  *   ./gradlew compileJava -PcompileVersion=26.2  compatibility check against another supported API
@@ -32,14 +32,14 @@ ext.minecraftVersions = [
         test     : (findProperty('testVersion') ?: latestVersion) as String,
 ]
 
-/** Paper API coordinates: 1.x versions are SNAPSHOTs, since 26.x Paper publishes builds per version. */
+/** Paper API coordinates: 1.x versions are SNAPSHOTs, since 26.x Paper publishes builds per version */
 ext.paperApiDependency = { String minecraftVersion ->
     minecraftVersion.startsWith('1.')
             ? "io.papermc.paper:paper-api:${minecraftVersion}-R0.1-SNAPSHOT"
             : "io.papermc.paper:paper-api:${minecraftVersion}.build.+"
 }
 
-/** Java version required by a Minecraft version (and the bytecode level its API is compiled with). */
+/** Java version required by a Minecraft version (and the bytecode level its API is compiled with) */
 ext.javaVersionFor = { String minecraftVersion ->
     minecraftVersion.startsWith('1.') ? 21 : 25
 }

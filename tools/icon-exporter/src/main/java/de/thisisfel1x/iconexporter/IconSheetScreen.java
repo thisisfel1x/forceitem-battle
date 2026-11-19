@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * Draws a grid of items on a solid background. Every cell is {@code cell} GUI units big and the
- * item sits at an offset of 1 unit, so neighbouring items never touch.
+ * item sits at an offset of 1 unit, so neighbouring items never touch
  */
 final class IconSheetScreen extends Screen {
 
@@ -23,7 +23,7 @@ final class IconSheetScreen extends Screen {
     }
 
     /**
-     * Must be called on the client thread.
+     * Must be called on the client thread
      */
     void show(List<ItemStack> stacks, int background) {
         this.stacks = List.copyOf(stacks);

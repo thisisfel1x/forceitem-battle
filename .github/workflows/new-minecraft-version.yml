@@ -6,12 +6,12 @@ name: New Minecraft version
 #   2. a pull request "Support Minecraft <version>" is opened on branch minecraft/<version>
 #   3. build.yml verifies the branch: renders the item icons with the new client (artifact "icon-preview"
 #      contains screenshots), compile + smoke test for every supported version incl. the new one
-# Merging the pull request publishes the release to GitHub and Modrinth (release.yml).
+# Merging the pull request publishes the release to GitHub and Modrinth (release.yml)
 #
 # Requires: Settings -> Actions -> General -> "Allow GitHub Actions to create and approve pull requests".
 # Optional: a secret AUTOMATION_TOKEN (fine-grained PAT: contents + pull requests write) - pull requests
 # opened with the default token do not trigger other workflows, so build.yml would not run as PR check
-# (step 3 covers that within this workflow anyway).
+# (step 3 covers that within this workflow anyway)
 on:
   schedule:
     - cron: '17 5 * * *'

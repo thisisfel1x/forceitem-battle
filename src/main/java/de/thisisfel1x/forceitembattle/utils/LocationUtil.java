@@ -13,12 +13,12 @@ public class LocationUtil {
 
     /**
      * Calculates a list of evenly spaced locations in a circle around a center point.
-     * The calculated locations will have their direction set to face the center of the circle.
+     * The calculated locations will have their direction set to face the center of the circle
      *
-     * @param center The center location of the circle.
-     * @param pointCount The number of points (spawn locations) to calculate.
-     * @param radius The radius of the circle.
-     * @return A List of Locations representing the spawn points.
+     * @param center The center location of the circle
+     * @param pointCount The number of points (spawn locations) to calculate
+     * @param radius The radius of the circle
+     * @return A List of Locations representing the spawn points
      */
     public static List<Location> calculateCircleSpawns(Location center, int pointCount, double radius) {
         List<Location> locations = new ArrayList<>();

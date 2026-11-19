@@ -2,10 +2,10 @@ package de.thisisfel1x.forceitembattle.listeners.player;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -26,8 +26,10 @@ public class JoinListener implements Listener {
 
         GameStateEnum currentGameState = this.forceItemBattle.getGameManager().getCurrentGameState().getGameStateEnum();
 
-        event.joinMessage(this.forceItemBattle.getPrefix()
-                .append(Component.text(player.getName() + " hat das Spiel betreten", NamedTextColor.GRAY)));
+        // Every player gets the message in its own language
+        event.joinMessage(null);
+        this.forceItemBattle.getLanguageManager().broadcast(Message.PLAYER_JOINED,
+                Placeholder.unparsed("player", player.getName()));
 
         this.forceItemBattle.getResourcePackService().sendTo(player);
 
@@ -58,7 +60,7 @@ public class JoinListener implements Listener {
     }
 
     /**
-     * A player of the running game came back: restore everything that is bound to the session.
+     * A player of the running game came back: restore everything that is bound to the session
      */
     private void handleRejoin(Player player, GamePlayer gamePlayer, GameStateEnum currentGameState) {
         this.forceItemBattle.getTeamManager().hideSpectatorsFrom(player);
@@ -76,10 +78,8 @@ public class JoinListener implements Listener {
             gamePlayer.freezePlayer();
         }
 
-        player.sendMessage(this.forceItemBattle.getPrefix()
-                .append(Component.text("Willkommen zurück! Du bist wieder in ", NamedTextColor.GRAY))
-                .append(Component.text(gamePlayer.getTeam().getTeamName(), gamePlayer.getTeam().getTeamColor()))
-                .append(Component.text(".", NamedTextColor.GRAY)));
+        gamePlayer.sendMessage(Message.PLAYER_WELCOME_BACK,
+                Placeholder.component("team", gamePlayer.getTeam().getDisplayName()));
     }
 
     private void handleSpectatorJoin(Player player) {

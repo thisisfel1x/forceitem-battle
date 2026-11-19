@@ -12,6 +12,9 @@ The game principle is simple: Players are divided into teams and are tasked with
 * **Rejoin:** Players who lose their connection during a running game can rejoin and continue with their team.
 * **End-Game Showcase:** An animated title sequence at the end of the game reveals all teams and their found items, from last place up to the winner.
 * **Custom Resource Pack:** Item icons in the boss bar and the scoreboard title are provided by a resource pack that is sent to players on join. The pack is built together with the plugin and attached to every release.
+* **Smaller Biomes:** Optionally generates the world with smaller biomes, so biome specific items are not hundreds of blocks apart (see [Biome Size](#biome-size)).
+* **Game Settings:** Backpack, hunger, damage and starter tools are switched in the lobby with the settings item.
+* **Multiple Languages:** Every player gets the texts in its client language. English and German are included, more languages are just another file (see [Languages](#languages)).
 
 -----
 
@@ -26,6 +29,19 @@ The game principle is simple: Players are divided into teams and are tasked with
 | `/top`                                        | Teleports player to the highest block at the current location | (None)                  |
 
 The lobby settings item is only available with the permission `forceitembattle.settings`. Both permissions default to operators.
+
+### Game Settings
+
+Switched in the lobby with the settings item, they apply to the next game:
+
+| Setting       | Default | Description                                                                                 |
+|:--------------|:--------|:--------------------------------------------------------------------------------------------|
+| Backpack      | on      | Every team has a shared backpack (`/backpack`)                                              |
+| No hunger     | on      | The food bar stays full the whole game                                                      |
+| No damage     | off     | Players lose no hearts during the game (the void and `/kill` still kill)                    |
+| Starter tools | off     | Every player gets an unbreakable diamond pickaxe and axe with Efficiency I when the game starts |
+
+Developers: every setting is a constant of `SettingType` (`settings/SettingType.java`) - no string keys.
 
 ### Requirements
 
@@ -76,6 +92,7 @@ Useful while developing:
 |:---------------------------------------------------------|:----------------------------------------------------------|
 | `./gradlew runServer -PtestVersion=26.1.2`               | Local test server of any supported version (default: newest) |
 | `./gradlew compileJava -PcompileVersion=26.2`            | Compile against the API of another supported version      |
+| `./gradlew test`                                         | Unit tests (language files, biome size data pack)         |
 | `python3 tools/smoke-test/smoke_test.py --minecraft 1.21.11 --plugin build/libs/forceitem-battle-1.2.0.jar` | Start a Paper server with the jar and check the log |
 | `python3 tools/smoke-test/e2e_test.py --plugin build/libs/forceitem-battle-1.2.0.jar --pack build/libs/forceitem-battle-pack-1.2.0.zip` | Server + two real game clients play a game, checks the boss bar icon (opens two game windows) |
 
@@ -91,6 +108,8 @@ All versions are listed in `gradle.properties`:
 supportedVersions=1.21.11,26.1.1,26.1.2,26.2,26.3
 resourcePackMinFormat=75
 resourcePackMaxFormat=97
+dataPackMinFormat=94
+dataPackMaxFormat=121
 ```
 
 * The jar is compiled against the **oldest** version (its API, `api-version` and Java bytecode level) - Paper loads
@@ -104,13 +123,14 @@ resourcePackMaxFormat=97
 ### New Minecraft versions
 
 The workflow **New Minecraft version** checks daily for a new Minecraft version with a stable Paper build. If there is
-one, it adds the version to `supportedVersions`, raises `resourcePackMaxFormat`, bumps the patch version, renders the
+one, it adds the version to `supportedVersions`, raises `resourcePackMaxFormat` and `dataPackMaxFormat`, bumps the patch version, renders the
 icons with the new client (as soon as Fabric supports it) and opens a pull request `Support Minecraft <version>`.
 The same run verifies the branch (compile, smoke test, end-to-end test). **Merging the pull request publishes the
 release to GitHub and Modrinth.** It can also be started manually with explicit versions.
 
-Dropping an old version: remove it from `supportedVersions` and set `resourcePackMinFormat` to the format of the new
-oldest version (`pack_version.resource_major` in the `version.json` of its client jar).
+Dropping an old version: remove it from `supportedVersions` and set `resourcePackMinFormat` / `dataPackMinFormat` to
+the formats of the new oldest version (`pack_version.resource_major` / `data_major` in the `version.json` of its
+client jar).
 
 -----
 
@@ -120,6 +140,9 @@ On first start the plugin creates `plugins/forceitem-battle/config.yml`:
 
 | Option                               | Default | Description                                                                                         |
 |:-------------------------------------|:--------|:----------------------------------------------------------------------------------------------------|
+| `language.default`                   | `en`    | Language of the console and of players whose client language has no file                           |
+| `language.per-player`                | `true`  | Every player gets its client language. `false`: everybody gets `language.default`                   |
+| `world.biome-size`                   | `SMALL` | `NORMAL`, `SMALL` (half as wide) or `TINY` (a quarter as wide), see [Biome Size](#biome-size)       |
 | `resource-pack.enabled`              | `true`  | Send the resource pack on join                                                                      |
 | `resource-pack.url`                  | `""`    | Empty: pack of the GitHub release of this plugin version. Otherwise a direct download link          |
 | `resource-pack.sha1`                 | `""`    | SHA-1 of the pack zip, only needed with an own `url` (empty url: the built-in hash is used)         |
@@ -127,11 +150,42 @@ On first start the plugin creates `plugins/forceitem-battle/config.yml`:
 | `teams.amount`                       | `14`    | Number of teams (max. 18)                                                                           |
 | `teams.size`                         | `2`     | Players per team                                                                                    |
 | `jokers.per-team`                    | `true`  | `true`: joker amount is given once per team, `false`: every team member gets the full amount        |
-| `hunger.enabled`                     | `false` | Players lose hunger during the game. `false`: the food bar stays full                               |
 | `scoreboard.show-ranking-ingame`     | `false` | Show the live ranking in the sidebar during the game                                                |
 | `results.shutdown-server`            | `true`  | Stop the server after the results                                                                   |
 | `results.shutdown-delay-seconds`     | `20`    | Countdown before the server stops                                                                   |
 | `items.additional-banned`            | `[]`    | Additional material names that are never chosen                                                     |
+
+### Languages
+
+The texts are in `plugins/forceitem-battle/lang/<language>.yml` - `en.yml` and `de.yml` are created on first start
+and can be edited. Formatting uses [MiniMessage](https://docs.advntr.dev/minimessage/format.html)
+(colors, gradients, ...), the placeholders are noted in the files.
+
+* **New language:** copy `en.yml` to e.g. `fr.yml` or `pt_br.yml` (the [Minecraft language code](https://minecraft.wiki/w/Language))
+  and translate it. It is detected on the next start and used for every player with that client language.
+* **Missing messages** fall back to the bundled version of the language, then to `language.default`, then to English -
+  a file only needs the messages it changes, and new messages of plugin updates show up automatically.
+* Item names are translated by the game client itself.
+
+### Biome Size
+
+In a vanilla world a single biome is often several hundred blocks wide - looking for cocoa beans, a cactus or
+terracotta can take a long walk. `world.biome-size` makes biomes smaller:
+
+| Value    | Biome width                    |
+|:---------|:-------------------------------|
+| `NORMAL` | vanilla                        |
+| `SMALL`  | half (a quarter of the area)   |
+| `TINY`   | a quarter (1/16 of the area)   |
+
+Only the temperature and humidity noise of the overworld get a higher frequency - the two values that decide nothing
+but the biome. Terrain (continents, mountains, rivers) is generated like in vanilla, there are just more biomes on it.
+Technically the plugin registers a data pack before the world is loaded (Paper plugin bootstrap).
+
+* The option is read on server start and applies to **newly generated chunks** only. After changing it use a new world
+  (delete the world folders) - otherwise old and new chunks meet at hard biome edges.
+* A config of an older plugin version (without the option) keeps `NORMAL`, so existing worlds are not affected.
+* `level-type=large_biomes` uses its own noise and is not affected.
 
 -----
 
