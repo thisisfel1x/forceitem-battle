@@ -132,8 +132,16 @@ class Client:
         passed = any(f"End-to-end test passed ({self.role} client)" in line for line in self.lines)
         if self.exit_code == 0 and passed:
             return []
-        failure = next((line.strip() for line in self.lines if "AssertionError" in line or "Exception:" in line), None)
-        return [f"{self.role} client failed (exit code {self.exit_code})" + (f": {failure}" if failure else "")]
+        # A JVM crash (e.g. in the graphics driver) beats exceptions the game caught and logged earlier
+        crash = next((line.strip() for line in self.lines if "SIGSEGV" in line or "SIGABRT" in line), None)
+        frame = next((self.lines[i + 1].strip() for i, line in enumerate(self.lines[:-1])
+                      if "Problematic frame:" in line), None)
+        if crash:
+            failure = crash + (f" {frame}" if frame else "")
+        else:
+            failure = next((line.strip() for line in self.lines if "AssertionError" in line or "Exception:" in line), None)
+        state = "passed, but crashed on exit" if passed else "failed"
+        return [f"{self.role} client {state} (exit code {self.exit_code})" + (f": {failure}" if failure else "")]
 
 
 def exporter_minecraft_version():
