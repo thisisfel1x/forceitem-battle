@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 
 /**
  * Minimal read-only chest GUI. Every click inside a view of this GUI is cancelled by
- * {@link GuiListener}; slots may carry an optional click action.
+ * {@link GuiListener}; slots may carry an optional click action
  */
 public class SimpleGui implements InventoryHolder {
 
@@ -44,7 +44,7 @@ public class SimpleGui implements InventoryHolder {
     }
 
     /**
-     * Puts the item into the first empty slot.
+     * Puts the item into the first empty slot
      *
      * @return the used slot or -1 if the GUI is full
      */
@@ -57,7 +57,7 @@ public class SimpleGui implements InventoryHolder {
     }
 
     /**
-     * Replaces the item of a slot while keeping its click action.
+     * Replaces the item of a slot while keeping its click action
      */
     public void updateItem(int slot, ItemStack item) {
         if (slot < 0 || slot >= this.inventory.getSize()) return;

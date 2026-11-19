@@ -1,6 +1,7 @@
 package de.thisisfel1x.forceitembattle.gui;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import de.thisisfel1x.forceitembattle.teams.ForceItemBattleTeam;
 import de.thisisfel1x.forceitembattle.utils.Items;
@@ -26,7 +27,8 @@ public class TeamSelectorInventory {
 
     public void openGui(Player player) {
         List<ForceItemBattleTeam> teams = this.forceItemBattle.getTeamManager().getTeams();
-        SimpleGui gui = new SimpleGui(Component.text("Teamauswahl"), (teams.size() + 8) / 9);
+        SimpleGui gui = new SimpleGui(this.forceItemBattle.getLanguageManager().render(player, Message.TEAM_GUI_TITLE),
+                (teams.size() + 8) / 9);
 
         for (ForceItemBattleTeam forceItemBattleTeam : teams) {
             gui.addItem(this.getItemStackForTeam(forceItemBattleTeam), event -> {
@@ -43,8 +45,7 @@ public class TeamSelectorInventory {
 
                 // Check first: a full team must not cost the player the old team
                 if (forceItemBattleTeam.isFull()) {
-                    clickedPlayer.sendMessage(this.forceItemBattle.getPrefix()
-                            .append(Component.text("Dieses Team ist bereits voll", NamedTextColor.RED)));
+                    this.forceItemBattle.getLanguageManager().send(clickedPlayer, Message.TEAM_FULL);
                     return;
                 }
 
@@ -71,7 +72,7 @@ public class TeamSelectorInventory {
             lore.add(Items.noItalic(line));
         }
 
-        Component name = Component.text(forceItemBattleTeam.getTeamName(), forceItemBattleTeam.getTeamColor())
+        Component name = forceItemBattleTeam.getDisplayName()
                 .append(Component.text(" (" + forceItemBattleTeam.getCurrentTeamSize() + "/" + forceItemBattleTeam.getMaxTeamSize() + ")"));
 
         ItemStack itemStack = Items.named(Material.LEATHER_BOOTS, name);

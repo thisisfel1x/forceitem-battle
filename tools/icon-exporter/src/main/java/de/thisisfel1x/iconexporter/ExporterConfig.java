@@ -3,7 +3,7 @@ package de.thisisfel1x.iconexporter;
 import java.nio.file.Path;
 
 /**
- * Settings passed in by Gradle as system properties (see build.gradle).
+ * Settings passed in by Gradle as system properties (see build.gradle)
  *
  * @param iconDir          output directory for the rendered icons ({@code <item id>.png})
  * @param manifestFile     JSON file describing the export (Minecraft version, pack format, items)

@@ -21,7 +21,7 @@ public class ItemRegistry {
 
     /**
      * Materials that are banned by their exact name. Use this for single items - a substring
-     * rule here would accidentally hit unrelated materials.
+     * rule here would accidentally hit unrelated materials
      */
     private static final Set<String> BANNED_EXACT = Set.of(
             // Only obtainable in creative mode
@@ -35,15 +35,15 @@ public class ItemRegistry {
     );
 
     /**
-     * Materials are banned if their name starts with one of these.
+     * Materials are banned if their name starts with one of these
      */
     private static final List<String> BANNED_PREFIXES = List.of(
-            // End dimension blocks (END_STONE, END_ROD, END_PORTAL_FRAME, ...) - but not ENDER_PEARL & co.
+            // End dimension blocks (END_STONE, END_ROD, END_PORTAL_FRAME, ...) - but not ENDER_PEARL & co
             "END_"
     );
 
     /**
-     * Materials are banned if their name ends with one of these.
+     * Materials are banned if their name ends with one of these
      */
     private static final List<String> BANNED_SUFFIXES = List.of(
             // All ores (need silk touch), but not e.g. SPORE_BLOSSOM
@@ -55,7 +55,7 @@ public class ItemRegistry {
 
     /**
      * Materials are banned if their name contains one of these. Keep these specific enough
-     * that they only match the intended family of items.
+     * that they only match the intended family of items
      */
     private static final List<String> BANNED_FRAGMENTS = List.of(
             "COMMAND_BLOCK",

@@ -1,22 +1,20 @@
 package de.thisisfel1x.forceitembattle.settings;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
-import net.kyori.adventure.text.Component;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.List;
-
 public abstract class AbstractSetting<T> {
 
-    protected final Component name;
-    protected final List<Component> description;
+    protected final Message name;
+    protected final Message description;
     protected final Material iconMaterial;
     protected final T defaultValue;
     protected T value;
 
-    public AbstractSetting(Component name, List<Component> description, Material iconMaterial, T defaultValue) {
+    public AbstractSetting(Message name, Message description, Material iconMaterial, T defaultValue) {
         this.name = name;
         this.description = description;
         this.iconMaterial = iconMaterial;
@@ -32,15 +30,24 @@ public abstract class AbstractSetting<T> {
         this.value = value;
     }
 
-    public Component getName() {
+    public Message getName() {
         return name;
     }
 
-    public abstract ItemStack getIcon();
+    /**
+     * @param viewer the player the settings GUI is shown to - texts are in its language
+     */
+    public abstract ItemStack getIcon(Player viewer);
 
     public abstract void handleIconClick(Player player);
 
+    /**
+     * Called when the game starts (after the countdown)
+     */
     public abstract void applyEffect(ForceItemBattle plugin);
 
+    /**
+     * Called when the game ends
+     */
     public abstract void removeEffect(ForceItemBattle plugin);
 }

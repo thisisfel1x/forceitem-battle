@@ -4,10 +4,11 @@ import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.game.GameState;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import de.thisisfel1x.forceitembattle.teams.ForceItemBattleTeam;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.entity.Player;
 
 public class IngameState extends GameState {
@@ -44,14 +45,13 @@ public class IngameState extends GameState {
 
             int minutes = this.timeLeftInSeconds / 60;
             int seconds = this.timeLeftInSeconds % 60;
-            Component timeComponent = Component.text(String.format("%02d:%02d", minutes, seconds), NamedTextColor.YELLOW);
+            TagResolver time = Placeholder.unparsed("time", String.format("%02d:%02d", minutes, seconds));
 
             for (Player player : this.forceItemBattle.getServer().getOnlinePlayers()) {
-                Component actionBarMessage = timeComponent;
-                if (this.forceItemBattle.getTeamManager().isSpectator(player)) {
-                    actionBarMessage = actionBarMessage.append(Component.text(" | Spectator", NamedTextColor.GRAY));
-                }
-                player.sendActionBar(actionBarMessage);
+                Message message = this.forceItemBattle.getTeamManager().isSpectator(player)
+                        ? Message.GAME_TIMER_SPECTATOR
+                        : Message.GAME_TIMER;
+                player.sendActionBar(this.forceItemBattle.getLanguageManager().render(player, message, time));
             }
 
             this.timeLeftInSeconds--;

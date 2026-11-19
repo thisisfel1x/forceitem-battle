@@ -3,11 +3,10 @@ package de.thisisfel1x.forceitembattle.commands;
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -23,19 +22,19 @@ public class SpawnCommand implements BasicCommand {
     @Override
     public void execute(CommandSourceStack source, String[] args) {
         if (!(source.getSender() instanceof Player player)) {
-            source.getSender().sendMessage(Component.text("Dieser Befehl ist nur für Spieler", NamedTextColor.RED));
+            this.forceItemBattle.getLanguageManager().send(source.getSender(), Message.COMMAND_PLAYERS_ONLY);
             return;
         }
 
         GameManager gameManager = forceItemBattle.getGameManager();
         if (gameManager.getCurrentGameState().getGameStateEnum() != GameStateEnum.INGAME) {
-            player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Dieser Befehl kann nur während dem Spiel ausgeführt werden!", NamedTextColor.RED)));
+            this.forceItemBattle.getLanguageManager().send(player, Message.COMMAND_ONLY_INGAME);
             return;
         }
 
         GamePlayer gamePlayer = forceItemBattle.getTeamManager().getGamePlayer(player.getUniqueId());
         if (gamePlayer == null || gamePlayer.isSpectator()) {
-            player.sendMessage(forceItemBattle.getPrefix().append(Component.text("Du bist kein Spieler!", NamedTextColor.RED)));
+            this.forceItemBattle.getLanguageManager().send(player, Message.COMMAND_NOT_A_PLAYER);
             return;
         }
 

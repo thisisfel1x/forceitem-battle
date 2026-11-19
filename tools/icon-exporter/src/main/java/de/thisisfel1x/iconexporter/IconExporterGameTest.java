@@ -49,20 +49,20 @@ import java.util.stream.Stream;
 /**
  * Renders every item of the running Minecraft version with the game's own GUI item renderer and
  * stores it as a transparent PNG (one file per item id). Runs as a Fabric client gametest, so it
- * works headless in CI (xvfb) and needs no installed Minecraft.
+ * works headless in CI (xvfb) and needs no installed Minecraft
  *
  * <p>Transparency: every sheet is rendered twice, on black and on white. For a pixel that was
  * alpha-blended onto the background, {@code black = a*c} and {@code white = a*c + (1-a)*255},
- * so {@code a = 1 - (white - black) / 255} and {@code c = black / a}.
+ * so {@code a = 1 - (white - black) / 255} and {@code c = black / a}
  *
  * <p>Afterwards a preview resource pack is loaded and screenshots compare the two ways of showing
- * an icon in text: sprite object components (gui atlas) and bitmap font glyphs.
+ * an icon in text: sprite object components (gui atlas) and bitmap font glyphs
  */
 public final class IconExporterGameTest implements FabricClientGameTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("fib-icon-exporter");
 
-    /** Size of one sheet cell in GUI units: the 16 unit item plus a margin of 1 on every side. */
+    /** Size of one sheet cell in GUI units: the 16 unit item plus a margin of 1 on every side */
     private static final int CELL = 18;
     private static final int SHEET_COLUMNS = 32;
     private static final int SHEET_ROWS = 16;
@@ -74,7 +74,7 @@ public final class IconExporterGameTest implements FabricClientGameTest {
     private static final int PREVIEW_HEIGHT = 1080;
     private static final String PREVIEW_PACK = "fib-icon-preview";
 
-    /** Items shown in the preview: 3D models, tinted and flat items and some of the 26.x additions. */
+    /** Items shown in the preview: 3D models, tinted and flat items and some of the 26.x additions */
     private static final List<String> PREVIEW_ITEMS = List.of(
             "red_bed", "straw_bed", "chest", "oak_stairs", "white_banner", "shield", "grass_block",
             "glass", "diamond", "potion", "leather_chestplate", "compass", "oak_sapling",
@@ -86,6 +86,8 @@ public final class IconExporterGameTest implements FabricClientGameTest {
 
     @Override
     public void runTest(ClientGameTestContext context) {
+        if (!ClientTests.isSelected("icons")) return;
+
         ExporterConfig config = ExporterConfig.fromSystemProperties();
         LOGGER.info("Exporting item icons to {}", config.iconDir());
 
@@ -166,7 +168,7 @@ public final class IconExporterGameTest implements FabricClientGameTest {
      * Animated textures (magma, prismarine, command blocks, ...) must show the same frame in the black and the white
      * render, otherwise the transparency is computed wrong - and the same frame in every export, otherwise each
      * export changes these icons. Freezing the world stops the animations (they only tick while the level runs
-     * normally), then every animation is set back to its first frame.
+     * normally), then every animation is set back to its first frame
      */
     private static void freezeTextureAnimations(ClientGameTestContext context, TestSingleplayerContext singleplayer) {
         singleplayer.getServer().runCommand("tick freeze");

@@ -2,11 +2,12 @@
   "schemaVersion": 1,
   "id": "fib-icon-exporter",
   "version": "${version}",
-  "name": "ForceItemBattle Icon Exporter",
+  "name": "ForceItemBattle Icon Exporter & Client Tests",
   "environment": "client",
   "entrypoints": {
     "fabric-client-gametest": [
-      "de.thisisfel1x.iconexporter.IconExporterGameTest"
+      "de.thisisfel1x.iconexporter.IconExporterGameTest",
+      "de.thisisfel1x.iconexporter.ServerEndToEndGameTest"
     ]
   },
   "depends": {

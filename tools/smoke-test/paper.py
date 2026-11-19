@@ -1,6 +1,6 @@
 """
-Helpers for smoke_test.py: downloads Paper, prepares a server directory (accepts the
-Minecraft EULA - https://aka.ms/MinecraftEULA), runs the server and checks its log.
+Shared helpers for smoke_test.py and e2e_test.py: downloads Paper, prepares a server directory (accepts the
+Minecraft EULA - https://aka.ms/MinecraftEULA), runs the server and checks its log
 """
 
 import hashlib
@@ -20,13 +20,18 @@ PLUGIN_NAME = "forceitem-battle"
 # Log lines that fail a test (checked case sensitive)
 FAILURE_MARKERS = [
     "/ERROR]",
+    # Paper's console format: [12:34:56 ERROR]: ...
+    " ERROR]:",
     "Exception",
     "Error occurred while enabling",
     "Could not load plugin",
     "No scoreboard packet adapter available",
 ]
-# Known harmless lines that contain a failure marker (none so far)
-IGNORED = []
+# Known harmless lines that contain a failure marker
+IGNORED = [
+    # level-type=flat without generator-settings: Minecraft logs this and uses the default flat world
+    "No key layers in MapLike[{}]",
+]
 
 
 def fetch_json(url):
@@ -81,6 +86,9 @@ def prepare_server(server_dir, plugin_jar, port):
             f"server-port={port}",
             "server-ip=127.0.0.1",
             "online-mode=false",
+            # Newer Paper versions enable the whitelist by default - the end-to-end test client has to join
+            "white-list=false",
+            "enforce-whitelist=false",
             "level-type=minecraft\\:flat",
             "generate-structures=false",
             "spawn-protection=0",
@@ -93,7 +101,7 @@ def prepare_server(server_dir, plugin_jar, port):
 
 
 class PaperServer:
-    """A running Paper server; every log line is printed and kept in self.lines."""
+    """A running Paper server; every log line is printed and kept in self.lines"""
 
     def __init__(self, server_dir, paper_jar, java):
         command = [java, "-Xms1G", "-Xmx2G", "-jar", str(Path(paper_jar).resolve()), "--nogui"]
@@ -118,7 +126,7 @@ class PaperServer:
                 self.started = True
 
     def wait_for(self, predicate, timeout):
-        """Waits until predicate(line) matches a log line (also earlier ones) or the server exits."""
+        """Waits until predicate(line) matches a log line (also earlier ones) or the server exits"""
         deadline = time.monotonic() + timeout
         checked = 0
         while time.monotonic() < deadline:
@@ -126,6 +134,19 @@ class PaperServer:
                 new_lines = self.lines[checked:]
                 checked = len(self.lines)
             if any(predicate(line) for line in new_lines):
+                return True
+            if self.process.poll() is not None:
+                return False
+            time.sleep(0.25)
+        return False
+
+    def wait_for_count(self, predicate, count, timeout):
+        """Waits until predicate(line) matched count log lines in total"""
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            with self._lock:
+                matches = sum(1 for line in self.lines if predicate(line))
+            if matches >= count:
                 return True
             if self.process.poll() is not None:
                 return False

@@ -2,7 +2,7 @@ name: Release
 
 # Publishes a release to GitHub and Modrinth. The GitHub release contains the plugin jar and the resource pack
 # zip - the plugin downloads the pack from exactly this release by default (URL and SHA-1 are baked into the jar).
-# One jar supports every version in gradle.properties -> supportedVersions, all of them are listed on Modrinth.
+# One jar supports every version in gradle.properties -> supportedVersions, all of them are listed on Modrinth
 #
 # Triggers:
 #   - a pushed version tag:

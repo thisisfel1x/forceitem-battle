@@ -1,0 +1,137 @@
+# ForceItemBattle - Deutsch
+#
+# Texte im MiniMessage-Format: https://docs.advntr.dev/minimessage/format.html (Web-Editor: https://webui.advntr.dev)
+# <prefix> funktioniert in jeder Nachricht. Weitere Platzhalter stehen über den Nachrichten.
+# <plural:'1#Item|1<Items'> wählt einen Text nach der Zahl der Nachricht (java.text.ChoiceFormat-Muster)
+#
+# Fehlende Schlüssel werden aus der mitgelieferten Version dieser Datei übernommen
+
+prefix: "<#F9A03F>ForceItemBattle</#F9A03F> <dark_gray>●</dark_gray> <gray>"
+
+command:
+  players-only: "<prefix><red>Dieser Befehl ist nur für Spieler"
+  only-ingame: "<prefix><red>Dieser Befehl kann nur während des Spiels ausgeführt werden"
+  not-a-player: "<prefix><red>Du bist kein Spieler"
+  not-in-team: "<prefix><red>Du bist in keinem Team"
+  top:
+    overworld-only: "<prefix><red>Der Befehl ist nur in der Oberwelt nutzbar"
+  start:
+    already-running: "<prefix><red>Das Spiel läuft bereits oder wurde schon gestartet"
+    usage: '<prefix><red>Verwendung: /start \<Dauer in Minuten> \<Anzahl Joker>'
+    # <max>
+    invalid-duration: "<prefix><red>Die Dauer muss eine Zahl zwischen 1 und <max> Minuten sein"
+    # <max>
+    invalid-jokers: "<prefix><red>Die Joker-Anzahl muss eine Zahl zwischen 0 und <max> sein"
+    no-players: "<prefix><red>Es sind keine Spieler online"
+    starting: "<prefix><green>Das Spiel wird gestartet"
+
+backpack:
+  disabled: "<prefix><red>Der Backpack ist deaktiviert"
+  title: "Backpack"
+
+recipe:
+  # <item>
+  title: "Rezept für <item>"
+  none: "<prefix><yellow>Für dieses Item gibt es kein Herstellungsrezept"
+  unsupported: "<prefix><yellow>Dieser Rezept-Typ kann nicht angezeigt werden"
+
+lobby:
+  # <dots>: animiert, 0 bis 3 Punkte
+  waiting-for-players: "<white>Warten auf weitere Spieler<dots>"
+  bossbar: "Warte auf Spielstart..."
+  item:
+    team-selector: "<white>Wähle dein Team"
+    settings: "<red>Einstellungen"
+
+player:
+  # <player>
+  joined: "<prefix><gray><player> hat das Spiel betreten"
+  # <player>
+  left: "<prefix><gray><player> hat das Spiel verlassen"
+  # <team>
+  welcome-back: "<prefix><gray>Willkommen zurück! Du bist wieder in <team>"
+
+spectator:
+  item:
+    compass: "<white>Spieler beobachten"
+  gui:
+    title: "Alle Spieler"
+  player-offline: "<prefix><red>Dieser Spieler ist nicht mehr online"
+
+team:
+  gui:
+    title: "Teamauswahl"
+  already-member: "<prefix><red>Du bist bereits in diesem Team"
+  full: "<prefix><red>Dieses Team ist bereits voll"
+  # <player>
+  member-joined: "<prefix><player> <gray>hat dein Team betreten"
+  # <player>
+  member-left: "<prefix><player> <gray>hat dein Team verlassen"
+  # <team>
+  assigned: "<prefix><gray>Du wurdest <team> zugewiesen"
+  no-free-team: "<prefix><red>Es konnte kein freies Team mehr für dich gefunden werden"
+
+joker:
+  name: "<red>Joker"
+  # <player>, <item>
+  used: "<prefix><yellow><player></yellow> <gray>hat einen Joker für</gray> <item> <gray>eingesetzt!"
+
+item:
+  # <item>: das nächste Item
+  found: "<prefix><green>Item gefunden!</green> <gray>Nächstes Item:</gray> <yellow><item>"
+  # <item>
+  next: "<prefix><gray>Nächstes Item:</gray> <yellow><item>"
+
+settings:
+  gui:
+    title: "Einstellungen"
+  status:
+    enabled: "<gray>» Status: <green>AKTIVIERT"
+    disabled: "<gray>» Status: <red>DEAKTIVIERT"
+  backpack:
+    name: "<white>Backpack"
+    description: "<gray>Jedes Team bekommt einen gemeinsamen Backpack (/backpack)"
+  no-hunger:
+    name: "<white>Kein Hunger"
+    description: "<gray>Die Hungerleiste bleibt das ganze Spiel über voll"
+  no-damage:
+    name: "<white>Kein Schaden"
+    description: "<gray>Spieler verlieren während des Spiels keine Herzen"
+  starter-tools:
+    name: "<white>Starter-Tools"
+    description: "<gray>Jeder Spieler bekommt zum Spielstart eine unzerstörbare<newline><gray>Diamantspitzhacke und -axt mit Effizienz I"
+
+starting:
+  subtitle: "<gray>Das Spiel beginnt..."
+  # <seconds>
+  actionbar: "<white>Das Spiel startet in <seconds> <plural:'1#Sekunde|1<Sekunden'>"
+  go: "<gold><bold>LOS!"
+
+game:
+  # <time>: mm:ss
+  timer: "<yellow><time>"
+  # <time>: mm:ss
+  timer-spectator: "<yellow><time></yellow> <gray>| Zuschauer"
+
+results:
+  title: "<gold><bold>Ergebnisse"
+  hidden-team: "Team ?"
+  joker-suffix: "<yellow> (Joker)"
+  # <items>
+  team-items: "<white><items> <plural:'1#Item|1<Items'> gefunden!"
+  final:
+    header: "<gold><bold>▬▬▬▬▬ Endergebnis ▬▬▬▬▬"
+    # <rank>, <team>, <items>
+    line: "<gray>#<rank></gray> <team> <yellow>- <items> <plural:'1#Item|1<Items'>"
+    footer: "<gold><bold>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+  # <seconds>
+  shutdown: "<prefix><red>Der Server stoppt in <yellow><seconds></yellow> <plural:'1#Sekunde|1<Sekunden'>..."
+
+scoreboard:
+  # <online>, <max> - \ue652 is the person icon of the resource pack
+  lobby-players: "<white>\ue652 <dark_gray>●</dark_gray> <green><online><gray>/</gray><white><max>"
+  # <team_color>...</team_color>, <id>, <items>
+  team-line: "<team_color>#<id></team_color> <dark_gray>●</dark_gray> <white><items> <plural:'1#Item|1<Items'>"
+
+resource-pack:
+  prompt: "Dieses Pack wird für die Item-Icons benötigt!"

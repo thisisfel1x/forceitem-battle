@@ -8,7 +8,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.List;
 
 /**
- * Small helpers for building display items.
+ * Small helpers for building display items
  */
 public final class Items {
 

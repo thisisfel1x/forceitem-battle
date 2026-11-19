@@ -7,12 +7,12 @@ plugins {
 }
 
 group = 'de.thisisfel1x'
-// 'version' and 'supportedVersions' are defined in gradle.properties (single source of truth for jar, plugin.yml and releases)
+// 'version' and 'supportedVersions' are defined in gradle.properties (single source of truth for jar, paper-plugin.yml and releases)
 
 apply from: 'gradle/minecraft-versions.gradle'
 
 // Bytecode level of the oldest supported version - the jar has to load on its Java version.
-// A compatibility build against a newer API (-PcompileVersion) needs that API's level instead.
+// A compatibility build against a newer API (-PcompileVersion) needs that API's level instead
 def targetJavaVersion = javaVersionFor(minecraftVersions.compile)
 // JDK used for compiling and the local test server (runs every supported version)
 def toolchainJavaVersion = 25
@@ -27,12 +27,22 @@ repositories {
 }
 
 dependencies {
-    // Paper already ships Adventure (incl. MiniMessage), Gson and SnakeYAML - nothing of that is shaded.
+    // Paper already ships Adventure (incl. MiniMessage), Gson and SnakeYAML - nothing of that is shaded
     compileOnly(paperApiDependency(minecraftVersions.compile))
 
     // The only shaded (and relocated) dependency
     implementation("net.megavex:scoreboard-library-api:${scoreboardLibraryVersion}")
     runtimeOnly("net.megavex:scoreboard-library-implementation:${scoreboardLibraryVersion}")
+
+    // Unit tests (language files, biome size data pack) - the API brings Adventure and the Bukkit config classes
+    testImplementation(paperApiDependency(minecraftVersions.compile))
+    testImplementation(platform('org.junit:junit-bom:5.11.4'))
+    testImplementation('org.junit.jupiter:junit-jupiter')
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
 }
 
 java {
@@ -45,12 +55,19 @@ tasks.withType(JavaCompile).configureEach {
     options.compilerArgs.add('-Xlint:deprecation')
 }
 
+def dataPackMinFormat = (findProperty('dataPackMinFormat') ?: '0') as int
+def dataPackMaxFormat = (findProperty('dataPackMaxFormat') ?: '0') as int
+if (dataPackMinFormat <= 0 || dataPackMaxFormat < dataPackMinFormat) {
+    throw new GradleException("gradle.properties: invalid data pack format range ${dataPackMinFormat}..${dataPackMaxFormat}")
+}
+
 processResources {
     // Paper loads plugins with an older api-version, but refuses a newer one -> the oldest supported version
-    def props = [version: version, apiVersion: minecraftVersions.minimum]
+    def props = [version          : version, apiVersion: minecraftVersions.minimum,
+                 dataPackMinFormat: dataPackMinFormat, dataPackMaxFormat: dataPackMaxFormat]
     inputs.properties props
     filteringCharset = 'UTF-8'
-    filesMatching('plugin.yml') {
+    filesMatching(['paper-plugin.yml', 'datapack.properties']) {
         expand props
     }
 }

@@ -10,7 +10,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 
 /**
  * Keeps spectators from influencing the world. Damage, block changes, drops and inventory
- * clicks are handled in their respective listeners.
+ * clicks are handled in their respective listeners
  */
 public class SpectatorListener implements Listener {
 

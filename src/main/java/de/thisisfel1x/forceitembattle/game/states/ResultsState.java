@@ -4,6 +4,8 @@ import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.game.GameState;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
+import de.thisisfel1x.forceitembattle.i18n.LanguageManager;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import de.thisisfel1x.forceitembattle.teams.ForceItemBattleTeam;
 import de.thisisfel1x.forceitembattle.utils.FoundItemData;
@@ -11,19 +13,23 @@ import de.thisisfel1x.forceitembattle.utils.LocationUtil;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
 public class ResultsState extends GameState {
 
@@ -34,11 +40,11 @@ public class ResultsState extends GameState {
     private int nextSpawnIndex = 0;
 
     /**
-     * All teams with members, best team first.
+     * All teams with members, best team first
      */
     private List<ForceItemBattleTeam> ranking = List.of();
     /**
-     * Teams that found at least one item in the order they are revealed: worst first, winner last.
+     * Teams that found at least one item in the order they are revealed: worst first, winner last
      */
     private List<ForceItemBattleTeam> showcaseTeams = List.of();
     private final Audience audience = Bukkit.getServer();
@@ -104,7 +110,7 @@ public class ResultsState extends GameState {
 
     /**
      * Shows the team at the given showcase position or finishes with the final ranking
-     * if every team has been shown.
+     * if every team has been shown
      */
     private void startTeamShowcaseOrFinish(int showcaseIndex) {
         if (showcaseIndex < showcaseTeams.size()) {
@@ -130,9 +136,8 @@ public class ResultsState extends GameState {
     private class ShowIntroTask extends BukkitRunnable {
         @Override
         public void run() {
-            Component title = Component.text("Ergebnisse", NamedTextColor.GOLD, TextDecoration.BOLD);
             Title.Times times = Title.Times.times(Duration.ofSeconds(1), Duration.ofSeconds(3), Duration.ofSeconds(1));
-            audience.showTitle(Title.title(title, Component.empty(), times));
+            showTitle(player -> Title.title(render(player, Message.RESULTS_TITLE), Component.empty(), times));
             audience.playSound(Sound.sound(org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, Sound.Source.MASTER, 0.8f, 1f));
 
             currentResultsTask = new BukkitRunnable() {
@@ -165,11 +170,15 @@ public class ResultsState extends GameState {
             }
 
             FoundItemData itemData = foundItems.get(currentItemIndex);
-            Component title = Component.text("Team ?", team.getTeamColor(), TextDecoration.BOLD);
-            Component subtitle = Component.translatable(itemData.item().translationKey())
-                    .append(Component.text(itemData.usedJoker() ? " (Joker)" : "", NamedTextColor.YELLOW));
+            Component item = Component.translatable(itemData.item().translationKey());
+            Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofMillis(600), Duration.ofMillis(100));
 
-            audience.showTitle(Title.title(title, subtitle, Title.Times.times(Duration.ZERO, Duration.ofMillis(600), Duration.ofMillis(100))));
+            showTitle(player -> {
+                Component title = render(player, Message.RESULTS_HIDDEN_TEAM)
+                        .colorIfAbsent(team.getTeamColor()).decorate(TextDecoration.BOLD);
+                Component subtitle = itemData.usedJoker() ? item.append(render(player, Message.RESULTS_JOKER_SUFFIX)) : item;
+                return Title.title(title, subtitle, times);
+            });
             audience.playSound(Sound.sound(org.bukkit.Sound.UI_BUTTON_CLICK, Sound.Source.MASTER, 0.5f, 1.5f));
 
             currentItemIndex++;
@@ -188,10 +197,10 @@ public class ResultsState extends GameState {
         @Override
         public void run() {
             Component title = Component.text("#" + getRank(team) + " " + team.getTeamName(), team.getTeamColor(), TextDecoration.BOLD);
-            Component subtitle = Component.text(team.getFoundItems().size() + " Items gefunden!", NamedTextColor.WHITE);
+            TagResolver items = LanguageManager.count("items", team.getFoundItems().size());
             Title.Times times = Title.Times.times(Duration.ofSeconds(1), Duration.ofSeconds(3), Duration.ofSeconds(1));
 
-            audience.showTitle(Title.title(title, subtitle, times));
+            showTitle(player -> Title.title(title, render(player, Message.RESULTS_TEAM_ITEMS, items), times));
             audience.playSound(Sound.sound(org.bukkit.Sound.UI_TOAST_CHALLENGE_COMPLETE, Sound.Source.MASTER, 1f, 1.2f));
 
             currentResultsTask = new BukkitRunnable() {
@@ -204,20 +213,36 @@ public class ResultsState extends GameState {
     }
 
     private void sendFinalRankingToChat() {
-        audience.sendMessage(Component.text(""));
-        audience.sendMessage(Component.text("▬▬▬▬▬ Endergebnis ▬▬▬▬▬", NamedTextColor.GOLD, TextDecoration.BOLD));
-        audience.sendMessage(Component.text(""));
+        List<CommandSender> receivers = new ArrayList<>(Bukkit.getOnlinePlayers());
+        receivers.add(Bukkit.getConsoleSender());
 
-        for (ForceItemBattleTeam team : ranking) {
-            Component rankComponent = Component.text("#" + getRank(team) + " ", NamedTextColor.GRAY);
-            Component teamComponent = Component.text(team.getTeamName(), team.getTeamColor());
-            Component itemsComponent = Component.text(" - " + team.getFoundItems().size() + " Items", NamedTextColor.YELLOW);
+        LanguageManager languageManager = this.forceItemBattle.getLanguageManager();
+        for (CommandSender receiver : receivers) {
+            receiver.sendMessage(Component.empty());
+            languageManager.send(receiver, Message.RESULTS_FINAL_HEADER);
+            receiver.sendMessage(Component.empty());
 
-            audience.sendMessage(rankComponent.append(teamComponent).append(itemsComponent));
+            for (ForceItemBattleTeam team : ranking) {
+                languageManager.send(receiver, Message.RESULTS_FINAL_LINE,
+                        Placeholder.unparsed("rank", Integer.toString(getRank(team))),
+                        Placeholder.component("team", Component.text(team.getTeamName(), team.getTeamColor())),
+                        LanguageManager.count("items", team.getFoundItems().size()));
+            }
+
+            receiver.sendMessage(Component.empty());
+            languageManager.send(receiver, Message.RESULTS_FINAL_FOOTER);
         }
+    }
 
-        audience.sendMessage(Component.text(""));
-        audience.sendMessage(Component.text("▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬", NamedTextColor.GOLD, TextDecoration.BOLD));
+    private Component render(Player player, Message message, TagResolver... placeholders) {
+        return this.forceItemBattle.getLanguageManager().render(player, message, placeholders);
+    }
+
+    /**
+     * Shows every online player a title in its language
+     */
+    private void showTitle(Function<Player, Title> title) {
+        Bukkit.getOnlinePlayers().forEach(player -> player.showTitle(title.apply(player)));
     }
 
     private class ShutdownCountdownTask extends BukkitRunnable {
@@ -231,11 +256,8 @@ public class ResultsState extends GameState {
         @Override
         public void run() {
             if (announcements.contains(secondsLeft)) {
-                Component msg = forceItemBattle.getPrefix()
-                        .append(Component.text("Der Server stoppt in ", NamedTextColor.RED))
-                        .append(Component.text(secondsLeft, NamedTextColor.YELLOW))
-                        .append(Component.text(secondsLeft == 1 ? " Sekunde..." : " Sekunden...", NamedTextColor.RED));
-                audience.sendMessage(msg);
+                forceItemBattle.getLanguageManager().broadcast(Message.RESULTS_SHUTDOWN,
+                        LanguageManager.count("seconds", secondsLeft));
                 audience.playSound(Sound.sound(org.bukkit.Sound.BLOCK_NOTE_BLOCK_BASS, Sound.Source.MASTER, 1f, 1f));
             }
 

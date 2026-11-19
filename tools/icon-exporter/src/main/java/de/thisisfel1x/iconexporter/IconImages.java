@@ -3,7 +3,7 @@ package de.thisisfel1x.iconexporter;
 import com.mojang.blaze3d.platform.NativeImage;
 
 /**
- * Pixel operations on {@link NativeImage}s. All colors are ARGB.
+ * Pixel operations on {@link NativeImage}s. All colors are ARGB
  */
 final class IconImages {
 
@@ -11,7 +11,7 @@ final class IconImages {
     }
 
     /**
-     * Recovers a transparent image from the same content rendered on black and on white.
+     * Recovers a transparent image from the same content rendered on black and on white
      */
     static NativeImage extract(NativeImage onBlack, NativeImage onWhite, int x0, int y0, int size) {
         NativeImage icon = new NativeImage(size, size, true);
@@ -39,7 +39,7 @@ final class IconImages {
 
     /**
      * Box filter downscale with alpha weighting, so transparent pixels do not darken the edges.
-     * The source size must be a multiple of the target size.
+     * The source size must be a multiple of the target size
      */
     static NativeImage downscale(NativeImage source, int targetSize) {
         int factor = source.getWidth() / targetSize;

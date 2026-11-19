@@ -1,15 +1,34 @@
 # ForceItemBattle configuration
+#
+# Game rules like hunger, damage, starter tools and the backpack are switched in the lobby with the settings
+# item (permission forceitembattle.settings)
+
+language:
+  # Language of the console and of players whose client language has no file in plugins/forceitem-battle/lang.
+  # Bundled: en, de. More languages: put a file like fr.yml or pt_br.yml (Minecraft language code) next to them
+  default: en
+  # true: every player gets the texts in its client language (if there is a file for it)
+  per-player: true
+
+world:
+  # Size of the biomes: NORMAL (vanilla), SMALL (half as wide), TINY (a quarter as wide).
+  # Smaller biomes put the biome specific items (cactus, cocoa beans, terracotta, ...) closer together.
+  # Oceans and continents shrink along with the biomes, mountains and rivers stay like in vanilla
+  # Read on server start before the world is loaded and only applies to newly generated chunks:
+  # use a new world after changing it, otherwise old and new chunks meet at hard edges
+  biome-size: SMALL
+
 
 resource-pack:
   # Send the custom resource pack (item icons, scoreboard title glyphs) on join.
-  # Without the pack items are shown by name only.
+  # Without the pack items are shown by name only
   enabled: true
   # Empty (recommended): the pack of the GitHub release of exactly this plugin version
   #   (forceitem-battle-pack-<version>.zip) is used. URL and SHA-1 are built into the plugin.
-  # Own host: a direct download link to the pack zip, e.g. for a modified pack or a dev build.
+  # Own host: a direct download link to the pack zip, e.g. for a modified pack or a dev build
   url: ""
   # SHA-1 of the pack zip (40 hex characters). Only needed together with an own url -
-  # without it clients cannot cache the pack and will not notice pack updates reliably.
+  # without it clients cannot cache the pack and will not notice pack updates reliably
   sha1: ""
   # Players that decline the pack are disconnected
   required: true
@@ -24,11 +43,6 @@ jokers:
   # true:  the joker amount from /start is given once per team (fair for mixed team sizes)
   # false: every team member receives the full joker amount
   per-team: true
-
-hunger:
-  # Players lose hunger while the game is running
-  # false: the food bar stays full the whole game
-  enabled: false
 
 scoreboard:
   # Show the live team ranking in the sidebar while the game is running

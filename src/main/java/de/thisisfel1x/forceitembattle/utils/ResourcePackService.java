@@ -1,9 +1,9 @@
 package de.thisisfel1x.forceitembattle.utils;
 
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import net.kyori.adventure.resource.ResourcePackInfo;
 import net.kyori.adventure.resource.ResourcePackRequest;
-import net.kyori.adventure.text.Component;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
@@ -21,11 +21,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Resolves which resource pack is sent to joining players.
+ * Resolves which resource pack is sent to joining players
  *
  * <p>With an empty {@code resource-pack.url} the pack of the GitHub release of exactly this plugin
  * version is used. URL and SHA-1 of that pack are generated at build time (see
- * {@code gradle/resourcepack.gradle}) and shipped inside the jar, so they always match.
+ * {@code gradle/resourcepack.gradle}) and shipped inside the jar, so they always match
  */
 public class ResourcePackService {
 
@@ -114,7 +114,7 @@ public class ResourcePackService {
                 .packs(this.packInfo)
                 .replace(true)
                 .required(this.required)
-                .prompt(Component.text("Dieses Pack wird für die Item-Icons benötigt!"))
+                .prompt(ForceItemBattle.getInstance().getLanguageManager().render(player, Message.RESOURCE_PACK_PROMPT))
                 .build());
     }
 

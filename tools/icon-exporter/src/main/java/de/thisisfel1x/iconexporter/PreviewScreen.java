@@ -7,7 +7,7 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /**
- * Side by side comparison of the same icons as sprite object component and as font glyph.
+ * Side by side comparison of the same icons as sprite object component and as font glyph
  */
 final class PreviewScreen extends Screen {
 

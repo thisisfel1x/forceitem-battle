@@ -5,13 +5,19 @@ name: Build
 #
 #   build          renders the item icons with the Minecraft client (tools/icon-exporter - they are not part of
 #                  the repository), builds the plugin jar (one jar for all versions, compiled against the oldest
-#                  API) and the resource pack - uploaded as artifact "forceitem-battle" (icon screenshots: "icon-preview")
+#                  API) and the resource pack - uploaded as artifact "forceitem-battle" (icon screenshots: "icon-preview"),
+#                  runs the unit tests (language files, biome size data pack)
 #   compatibility  compiles the plugin against the API of every supported version
-#   smoke-test     starts a real Paper server of every supported version with the jar and checks the log
+#   smoke-test     starts a real Paper server of every supported version with the jar, checks the log and that the
+#                  biome size data pack is enabled
 #                  (tools/smoke-test/smoke_test.py - accepts the Minecraft EULA: https://aka.ms/MinecraftEULA)
+#   end-to-end     two real game clients (tools/icon-exporter) join a Paper server with the plugin, accept the
+#                  resource pack and play a game - checks the lobby texts in each client's language (English, German),
+#                  enables the starter tools in the settings GUI, checks the boss bar item icon and the starter tools
+#                  (tools/smoke-test/e2e_test.py, newest version only: the client matches tools/icon-exporter)
 #
 # Also called by release.yml (the released files are the artifact of this workflow) and by
-# new-minecraft-version.yml (verifies the branch with the new version).
+# new-minecraft-version.yml (verifies the branch with the new version)
 on:
   pull_request:
   push:
@@ -159,4 +165,58 @@ jobs:
         with:
           name: smoke-test-${{ matrix.minecraft }}
           path: build/smoke-test/*.log
+          if-no-files-found: warn
+
+  end-to-end:
+    name: End-to-end test
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up virtual display
+        uses: ./.github/actions/virtual-display
+
+      - name: Download plugin jar and resource pack
+        uses: actions/download-artifact@v4
+        with:
+          name: forceitem-battle
+          path: build/libs
+
+      - name: Run server and two clients
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+          # Minecraft 26.3+ asks SDL for an sRGB framebuffer - Xvfb has no such GLX visual, EGL (Mesa) has
+          SDL_VIDEO_FORCE_EGL: '1'
+        run: |
+          chmod +x gradlew
+          PLUGIN_JAR="$(ls build/libs/forceitem-battle-*.jar | head -n 1)"
+          PACK_ZIP="$(ls build/libs/forceitem-battle-pack-*.zip | head -n 1)"
+          xvfb-run --auto-servernum --server-args="-screen 0 2560x1440x24" \
+            python3 tools/smoke-test/e2e_test.py --plugin "$PLUGIN_JAR" --pack "$PACK_ZIP"
+
+      - name: Upload screenshots and logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: end-to-end-test
+          path: |
+            tools/icon-exporter/build/e2e-test
+            build/e2e-test/*.log
+            tools/icon-exporter/build/run/clientGameTest/logs
+            tools/icon-exporter/build/run/clientGameTest-secondary/logs
           if-no-files-found: warn

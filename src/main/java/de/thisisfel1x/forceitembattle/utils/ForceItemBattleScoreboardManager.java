@@ -3,10 +3,13 @@ package de.thisisfel1x.forceitembattle.utils;
 import de.thisisfel1x.forceitembattle.ForceItemBattle;
 import de.thisisfel1x.forceitembattle.game.GameManager;
 import de.thisisfel1x.forceitembattle.game.GameStateEnum;
+import de.thisisfel1x.forceitembattle.i18n.LanguageManager;
+import de.thisisfel1x.forceitembattle.i18n.Message;
 import de.thisisfel1x.forceitembattle.player.GamePlayer;
 import de.thisisfel1x.forceitembattle.teams.ForceItemBattleTeam;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
 import net.megavex.scoreboardlibrary.api.sidebar.Sidebar;
 import net.megavex.scoreboardlibrary.api.sidebar.component.ComponentSidebarLayout;
@@ -17,6 +20,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -24,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 
 public class ForceItemBattleScoreboardManager {
 
@@ -46,7 +51,7 @@ public class ForceItemBattleScoreboardManager {
         createSpectatorTeam();
 
         // Runs on the main thread: sidebars, teams and the game state are not thread safe.
-        // The library itself sends the packets asynchronously.
+        // The library itself sends the packets asynchronously
         this.updateTask = Bukkit.getScheduler().runTaskTimer(forceItemBattle, this::updateSidebar, 0L, 20L);
     }
 
@@ -78,15 +83,15 @@ public class ForceItemBattleScoreboardManager {
         if (gameManager == null || gameManager.getCurrentGameState() == null) return; // plugin still enabling
 
         GameStateEnum currentState = gameManager.getCurrentGameState().getGameStateEnum();
-        ComponentSidebarLayout layout;
+        Function<Locale, ComponentSidebarLayout> layoutFactory;
 
         switch (currentState) {
             case IDLE, STARTING -> {
-                layout = buildLobbyLayout();
+                layoutFactory = this::buildLobbyLayout;
                 clearTeamSuffixes();
             }
             case INGAME -> {
-                layout = this.showRankingIngame ? buildIngameLayout() : buildEmptyLayout();
+                layoutFactory = this.showRankingIngame ? this::buildIngameLayout : locale -> buildEmptyLayout();
                 for (ForceItemBattleTeam logicTeam : forceItemBattle.getTeamManager().getTeams()) {
                     ScoreboardTeam scoreboardTeam = teamManager.team(teamKey(logicTeam));
                     if (scoreboardTeam != null) {
@@ -98,13 +103,19 @@ public class ForceItemBattleScoreboardManager {
                 }
             }
             default -> {
-                layout = buildEmptyLayout();
+                layoutFactory = locale -> buildEmptyLayout();
                 clearTeamSuffixes();
             }
         }
 
-        for (Sidebar sidebar : playerSidebars.values()) {
-            layout.apply(sidebar);
+        // Every sidebar in the language of its player - built once per language
+        LanguageManager languageManager = forceItemBattle.getLanguageManager();
+        Map<String, ComponentSidebarLayout> layoutsByLanguage = new HashMap<>();
+        for (Map.Entry<UUID, Sidebar> entry : playerSidebars.entrySet()) {
+            Player player = Bukkit.getPlayer(entry.getKey());
+            Locale locale = player != null ? player.locale() : null;
+            layoutsByLanguage.computeIfAbsent(languageManager.languageFor(locale), language -> layoutFactory.apply(locale))
+                    .apply(entry.getValue());
         }
     }
 
@@ -114,23 +125,23 @@ public class ForceItemBattleScoreboardManager {
         }
     }
 
-    private ComponentSidebarLayout buildLobbyLayout() {
+    private ComponentSidebarLayout buildLobbyLayout(@Nullable Locale locale) {
         SidebarComponent title = SidebarComponent.staticLine(this.scoreboardTitle);
+
+        Component players = forceItemBattle.getLanguageManager().render(locale, Message.SCOREBOARD_LOBBY_PLAYERS,
+                Placeholder.unparsed("online", Integer.toString(Bukkit.getOnlinePlayers().size())),
+                Placeholder.unparsed("max", Integer.toString(forceItemBattle.getTeamManager().getMaxPlayers())));
 
         SidebarComponent lines = SidebarComponent.builder()
                 .addBlankLine()
-                .addDynamicLine(() -> {
-                    int online = Bukkit.getOnlinePlayers().size();
-                    int max = forceItemBattle.getTeamManager().getMaxPlayers();
-                    return forceItemBattle.miniMessage().deserialize("<white> <dark_gray>● <green>" + online + "<gray>/<white>" + max);
-                })
+                .addStaticLine(players)
                 .addBlankLine()
                 .build();
 
         return new ComponentSidebarLayout(title, lines);
     }
 
-    private ComponentSidebarLayout buildIngameLayout() {
+    private ComponentSidebarLayout buildIngameLayout(@Nullable Locale locale) {
         SidebarComponent title = SidebarComponent.staticLine(this.scoreboardTitle);
 
         var linesBuilder = SidebarComponent.builder();
@@ -143,10 +154,10 @@ public class ForceItemBattleScoreboardManager {
 
         linesBuilder.addBlankLine();
         for (ForceItemBattleTeam team : sortedTeams) {
-            int found = team.getFoundItems().size();
-            linesBuilder.addStaticLine(Component.text("#" + team.getTeamId() + " ", team.getTeamColor())
-                    .append(Component.text("● ", NamedTextColor.DARK_GRAY)
-                            .append(Component.text(found + " " + (found == 1 ? "Item" : "Items"), NamedTextColor.WHITE))));
+            linesBuilder.addStaticLine(forceItemBattle.getLanguageManager().render(locale, Message.SCOREBOARD_TEAM_LINE,
+                    Placeholder.styling("team_color", team.getTeamColor()),
+                    Placeholder.unparsed("id", Integer.toString(team.getTeamId())),
+                    LanguageManager.count("items", team.getFoundItems().size())));
         }
         linesBuilder.addBlankLine();
 

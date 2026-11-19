@@ -1,6 +1,8 @@
 name: forceitem-battle
 version: '${version}'
 main: de.thisisfel1x.forceitembattle.ForceItemBattle
+# Runs before the worlds are loaded: registers the data pack for the biome size (world.biome-size)
+bootstrapper: de.thisisfel1x.forceitembattle.ForceItemBattleBootstrap
 api-version: '${apiVersion}'
 authors: [ thisisfel1x ]
 
